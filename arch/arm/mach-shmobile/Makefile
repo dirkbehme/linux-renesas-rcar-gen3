@@ -21,8 +21,8 @@ obj-$(CONFIG_ARCH_EMEV2)	+= setup-emev2.o
 obj-$(CONFIG_ARCH_R7S72100)	+= setup-r7s72100.o
 
 # Clock objects
-ifndef CONFIG_COMMON_CLK
 obj-y				+= clock.o
+ifndef CONFIG_COMMON_CLK
 obj-$(CONFIG_ARCH_SH7372)	+= clock-sh7372.o
 obj-$(CONFIG_ARCH_SH73A0)	+= clock-sh73a0.o
 obj-$(CONFIG_ARCH_R8A73A4)	+= clock-r8a73a4.o
@@ -31,7 +31,6 @@ obj-$(CONFIG_ARCH_R8A7778)	+= clock-r8a7778.o
 obj-$(CONFIG_ARCH_R8A7779)	+= clock-r8a7779.o
 obj-$(CONFIG_ARCH_R8A7790)	+= clock-r8a7790.o
 obj-$(CONFIG_ARCH_R8A7791)	+= clock-r8a7791.o
-obj-$(CONFIG_ARCH_EMEV2)	+= clock-emev2.o
 obj-$(CONFIG_ARCH_R7S72100)	+= clock-r7s72100.o
 endif
 
@@ -52,7 +51,8 @@ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
 obj-$(CONFIG_ARCH_SH7372)	+= pm-sh7372.o sleep-sh7372.o pm-rmobile.o
 obj-$(CONFIG_ARCH_SH73A0)	+= pm-sh73a0.o
 obj-$(CONFIG_ARCH_R8A7740)	+= pm-r8a7740.o pm-rmobile.o
-obj-$(CONFIG_ARCH_R8A7779)	+= pm-r8a7779.o
+obj-$(CONFIG_ARCH_R8A7779)	+= pm-r8a7779.o pm-rcar.o
+obj-$(CONFIG_ARCH_R8A7790)	+= pm-r8a7790.o pm-rcar.o
 
 # Board objects
 ifdef CONFIG_ARCH_SHMOBILE_MULTI
