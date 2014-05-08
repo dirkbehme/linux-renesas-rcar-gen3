@@ -2415,7 +2415,6 @@ F:	drivers/net/ethernet/ti/cpmac.c
 CPU FREQUENCY DRIVERS
 M:	Rafael J. Wysocki <rjw@rjwysocki.net>
 M:	Viresh Kumar <viresh.kumar@linaro.org>
-L:	cpufreq@vger.kernel.org
 L:	linux-pm@vger.kernel.org
 S:	Maintained
 T:	git git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
@@ -2426,7 +2425,6 @@ F:	include/linux/cpufreq.h
 CPU FREQUENCY DRIVERS - ARM BIG LITTLE
 M:	Viresh Kumar <viresh.kumar@linaro.org>
 M:	Sudeep Holla <sudeep.holla@arm.com>
-L:	cpufreq@vger.kernel.org
 L:	linux-pm@vger.kernel.org
 W:	http://www.arm.com/products/processors/technologies/biglittleprocessing.php
 S:	Maintained
@@ -3485,6 +3483,12 @@ S:	Maintained
 F:	drivers/extcon/
 F:	Documentation/extcon/
 
+EXYNOS DP DRIVER
+M:	Jingoo Han <jg1.han@samsung.com>
+L:	dri-devel@lists.freedesktop.org
+S:	Maintained
+F:	drivers/gpu/drm/exynos/exynos_dp*
+
 EXYNOS MIPI DISPLAY DRIVERS
 M:	Inki Dae <inki.dae@samsung.com>
 M:	Donghwa Lee <dh09.lee@samsung.com>
@@ -3550,7 +3554,7 @@ F:	include/scsi/libfcoe.h
 F:	include/uapi/scsi/fc/
 
 FILE LOCKING (flock() and fcntl()/lockf())
-M:	Jeff Layton <jlayton@redhat.com>
+M:	Jeff Layton <jlayton@poochiereds.net>
 M:	J. Bruce Fields <bfields@fieldses.org>
 L:	linux-fsdevel@vger.kernel.org
 S:	Maintained
@@ -5108,14 +5112,19 @@ F:	drivers/s390/kvm/
 
 KERNEL VIRTUAL MACHINE (KVM) FOR ARM
 M:	Christoffer Dall <christoffer.dall@linaro.org>
+M:	Marc Zyngier <marc.zyngier@arm.com>
+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 L:	kvmarm@lists.cs.columbia.edu
 W:	http://systems.cs.columbia.edu/projects/kvm-arm
 S:	Supported
 F:	arch/arm/include/uapi/asm/kvm*
 F:	arch/arm/include/asm/kvm*
 F:	arch/arm/kvm/
+F:	virt/kvm/arm/
+F:	include/kvm/arm_*
 
 KERNEL VIRTUAL MACHINE FOR ARM64 (KVM/arm64)
+M:	Christoffer Dall <christoffer.dall@linaro.org>
 M:	Marc Zyngier <marc.zyngier@arm.com>
 L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 L:	kvmarm@lists.cs.columbia.edu
