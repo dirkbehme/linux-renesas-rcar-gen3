@@ -313,3 +313,8 @@ GPIO
   devm_gpiod_get()
   devm_gpiod_get_index()
   devm_gpiod_put()
+
+MDIO
+  devm_mdiobus_alloc()
+  devm_mdiobus_alloc_size()
+  devm_mdiobus_free()
