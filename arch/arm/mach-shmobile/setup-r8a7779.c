@@ -674,16 +674,6 @@ void __init r8a7779_add_standard_devices(void)
 	r8a7779_register_hpb_dmae();
 }
 
-/* do nothing for !CONFIG_SMP or !CONFIG_HAVE_TWD */
-void __init __weak r8a7779_register_twd(void) { }
-
-void __init r8a7779_earlytimer_init(void)
-{
-	r8a7779_clock_init();
-	r8a7779_register_twd();
-	shmobile_earlytimer_init();
-}
-
 void __init r8a7779_add_early_devices(void)
 {
 	early_platform_add_devices(r8a7779_devices_dt,
@@ -754,12 +744,26 @@ void __init r8a7779_init_delay(void)
 
 void __init r8a7779_add_standard_devices_dt(void)
 {
-	/* clocks are setup late during boot in the case of DT */
-	r8a7779_clock_init();
-
 	platform_add_devices(r8a7779_devices_dt,
 			     ARRAY_SIZE(r8a7779_devices_dt));
-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+}
+
+#define MODEMR		0xffcc0020
+
+u32 __init r8a7779_read_mode_pins(void)
+{
+	static u32 mode;
+	static bool mode_valid;
+
+	if (!mode_valid) {
+		void __iomem *modemr = ioremap_nocache(MODEMR, PAGE_SIZE);
+		BUG_ON(!modemr);
+		mode = ioread32(modemr);
+		iounmap(modemr);
+		mode_valid = true;
+	}
+
+	return mode;
 }
 
 static const char *r8a7779_compat_dt[] __initdata = {
