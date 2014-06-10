@@ -4,6 +4,7 @@
 extern void shmobile_earlytimer_init(void);
 extern void shmobile_setup_delay(unsigned int max_cpu_core_mhz,
 			 unsigned int mult, unsigned int div);
+extern void shmobile_init_delay(void);
 struct twd_local_timer;
 extern void shmobile_setup_console(void);
 extern void shmobile_boot_vector(void);
@@ -34,8 +35,10 @@ extern void shmobile_cpuidle_set_driver(struct cpuidle_driver *drv);
 
 #ifdef CONFIG_SUSPEND
 int shmobile_suspend_init(void);
+void shmobile_smp_apmu_suspend_init(void);
 #else
 static inline int shmobile_suspend_init(void) { return 0; }
+static inline void shmobile_smp_apmu_suspend_init(void) { return 0; }
 #endif
 
 #ifdef CONFIG_CPU_IDLE
