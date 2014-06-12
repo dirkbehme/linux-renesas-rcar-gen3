@@ -122,9 +122,9 @@ struct memory_reserve_config {
 static int __init rcar_gen2_scan_mem(unsigned long node, const char *uname,
 				     int depth, void *data)
 {
-	char *type = of_get_flat_dt_prop(node, "device_type", NULL);
-	__be32 *reg, *endp;
-	unsigned long l;
+	const char *type = of_get_flat_dt_prop(node, "device_type", NULL);
+	const __be32 *reg, *endp;
+	int l;
 	struct memory_reserve_config *mrc = data;
 	u64 lpae_start = (u64)1 << 32;
 
