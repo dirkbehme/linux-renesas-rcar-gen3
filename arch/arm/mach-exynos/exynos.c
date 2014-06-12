@@ -30,9 +30,6 @@
 #include "mfc.h"
 #include "regs-pmu.h"
 
-#define L2_AUX_VAL 0x7C470001
-#define L2_AUX_MASK 0xC200ffff
-
 static struct map_desc exynos4_iodesc[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_SYS,
@@ -202,7 +199,7 @@ static int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
 {
 	struct map_desc iodesc;
 	__be32 *reg;
-	unsigned long len;
+	int len;
 
 	if (!of_flat_dt_is_compatible(node, "samsung,exynos4210-chipid") &&
 		!of_flat_dt_is_compatible(node, "samsung,exynos5440-clock"))
@@ -245,25 +242,6 @@ void __init exynos_init_io(void)
 
 	exynos_map_io();
 }
-
-static int __init exynos4_l2x0_cache_init(void)
-{
-	int ret;
-
-	if (!soc_is_exynos4())
-		return 0;
-
-	ret = l2x0_of_init(L2_AUX_VAL, L2_AUX_MASK);
-	if (ret)
-		return ret;
-
-	if (IS_ENABLED(CONFIG_S5P_SLEEP)) {
-		l2x0_regs_phys = virt_to_phys(&l2x0_saved_regs);
-		clean_dcache_area(&l2x0_regs_phys, sizeof(unsigned long));
-	}
-	return 0;
-}
-early_initcall(exynos4_l2x0_cache_init);
 
 static void __init exynos_dt_machine_init(void)
 {
@@ -333,6 +311,8 @@ static void __init exynos_reserve(void)
 DT_MACHINE_START(EXYNOS_DT, "SAMSUNG EXYNOS (Flattened Device Tree)")
 	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+	.l2c_aux_val	= 0x3c400001,
+	.l2c_aux_mask	= 0xc20fffff,
 	.smp		= smp_ops(exynos_smp_ops),
 	.map_io		= exynos_init_io,
 	.init_early	= exynos_firmware_init,

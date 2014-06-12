@@ -106,12 +106,11 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
 	if (!c)
 		return;
 
-	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
+	seq_printf(s, "%*s%-*s %11d %12d %11lu %10lu\n",
 		   level * 3 + 1, "",
 		   30 - level * 3, c->name,
 		   c->enable_count, c->prepare_count, clk_get_rate(c),
 		   clk_get_accuracy(c));
-	seq_printf(s, "\n");
 }
 
 static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
@@ -132,8 +131,8 @@ static int clk_summary_show(struct seq_file *s, void *data)
 {
 	struct clk *c;
 
-	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
-	seq_printf(s, "---------------------------------------------------------------------------------\n");
+	seq_puts(s, "   clock                         enable_cnt  prepare_cnt        rate   accuracy\n");
+	seq_puts(s, "--------------------------------------------------------------------------------\n");
 
 	clk_prepare_lock();
 
@@ -1007,6 +1006,7 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
 	else
 		return clk->rate;
 }
+EXPORT_SYMBOL_GPL(__clk_round_rate);
 
 /**
  * clk_round_rate - round the given rate for a clk
