@@ -94,6 +94,7 @@ struct acpi_ioremap {
 	acpi_physical_address phys;
 	acpi_size size;
 	unsigned long refcount;
+	struct rcu_head rcu;
 };
 
 static LIST_HEAD(acpi_ioremaps);
@@ -423,13 +424,18 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
 		list_del_rcu(&map->list);
 }
 
+static void acpi_os_map_reclaim(struct rcu_head *rcu)
+{
+	struct acpi_ioremap *map = container_of(rcu, struct acpi_ioremap, rcu);
+
+	acpi_unmap(map->phys, map->virt);
+	kfree(map);
+}
+
 static void acpi_os_map_cleanup(struct acpi_ioremap *map)
 {
-	if (!map->refcount) {
-		synchronize_rcu();
-		acpi_unmap(map->phys, map->virt);
-		kfree(map);
-	}
+	if (!map->refcount)
+		call_rcu(&map->rcu, acpi_os_map_reclaim);
 }
 
 void __ref acpi_os_unmap_iomem(void __iomem *virt, acpi_size size)
