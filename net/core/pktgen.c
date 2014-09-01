@@ -3285,10 +3285,7 @@ static void pktgen_wait_for_skb(struct pktgen_dev *pkt_dev)
 static void pktgen_xmit(struct pktgen_dev *pkt_dev)
 {
 	struct net_device *odev = pkt_dev->odev;
-	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
-		= odev->netdev_ops->ndo_start_xmit;
 	struct netdev_queue *txq;
-	u16 queue_map;
 	int ret;
 
 	/* If device is offline, then don't send */
@@ -3326,8 +3323,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
 	if (pkt_dev->delay && pkt_dev->last_ok)
 		spin(pkt_dev, pkt_dev->next_tx);
 
-	queue_map = skb_get_queue_mapping(pkt_dev->skb);
-	txq = netdev_get_tx_queue(odev, queue_map);
+	txq = skb_get_tx_queue(odev, pkt_dev->skb);
 
 	local_bh_disable();
 
@@ -3339,7 +3335,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
 		goto unlock;
 	}
 	atomic_inc(&(pkt_dev->skb->users));
-	ret = (*xmit)(pkt_dev->skb, odev);
+	ret = netdev_start_xmit(pkt_dev->skb, odev);
 
 	switch (ret) {
 	case NETDEV_TX_OK:
