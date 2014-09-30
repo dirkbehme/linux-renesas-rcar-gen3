@@ -312,6 +312,10 @@
 	};
 };
 
+&cmt0 {
+	status = "ok";
+};
+
 &sata0 {
 	status = "okay";
 };
