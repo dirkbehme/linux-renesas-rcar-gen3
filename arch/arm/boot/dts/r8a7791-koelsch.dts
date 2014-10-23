@@ -516,9 +516,10 @@
 };
 
 &i2c2 {
+#if 0
 	pinctrl-0 = <&i2c2_pins>;
 	pinctrl-names = "default";
-
+#endif
 	status = "okay";
 	clock-frequency = <100000>;
 

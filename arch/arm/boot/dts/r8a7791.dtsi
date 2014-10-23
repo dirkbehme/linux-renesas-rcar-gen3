@@ -11,6 +11,7 @@
  */
 
 #include <dt-bindings/clock/r8a7791-clock.h>
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 
@@ -404,10 +405,17 @@
 	i2c2: i2c@e6530000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+#if 1
+		compatible = "i2c-gpio";
+		gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>, /* sda */
+			<&gpio2 6 GPIO_ACTIVE_HIGH>; /* scl */
+		i2c-gpio,delay-us = <2>; /* ~100 kHz */
+#else
 		compatible = "renesas,i2c-r8a7791";
 		reg = <0 0xe6530000 0 0x40>;
 		interrupts = <0 286 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&mstp9_clks R8A7791_CLK_I2C2>;
+#endif
 		status = "disabled";
 	};
 
