@@ -5,7 +5,6 @@ config IRQCHIP
 config ARM_GIC
 	bool
 	select IRQ_DOMAIN
-	select IRQ_DOMAIN_HIERARCHY
 	select MULTI_IRQ_HANDLER
 
 config ARM_GIC_V2M
