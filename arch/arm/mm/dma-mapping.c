@@ -2048,7 +2048,10 @@ static void arm_teardown_iommu_dma_ops(struct device *dev)
 {
 	struct dma_iommu_mapping *mapping = dev->archdata.mapping;
 
-	__arm_iommu_detach_device(dev);
+	if (!mapping)
+		return;
+
+	arm_iommu_detach_device(dev);
 	arm_iommu_release_mapping(mapping);
 }
 
