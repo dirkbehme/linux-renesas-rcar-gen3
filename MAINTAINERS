@@ -889,6 +889,7 @@ F:	arch/arm/boot/dts/at91*.dts
 F:	arch/arm/boot/dts/at91*.dtsi
 F:	arch/arm/boot/dts/sama*.dts
 F:	arch/arm/boot/dts/sama*.dtsi
+F:	arch/arm/include/debug/at91.S
 
 ARM/ATMEL AT91 Clock Support
 M:	Boris Brezillon <boris.brezillon@free-electrons.com>
@@ -1302,10 +1303,13 @@ S:	Maintained
 
 ARM/QUALCOMM SUPPORT
 M:	Kumar Gala <galak@codeaurora.org>
+M:	Andy Gross <agross@codeaurora.org>
 M:	David Brown <davidb@codeaurora.org>
 L:	linux-arm-msm@vger.kernel.org
+L:	linux-soc@vger.kernel.org
 S:	Maintained
 F:	arch/arm/mach-qcom/
+F:	drivers/soc/qcom/
 T:	git git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git
 
 ARM/RADISYS ENP2611 MACHINE SUPPORT
@@ -2134,7 +2138,7 @@ F:	arch/arm/boot/dts/bcm470*
 BROADCOM BCM63XX ARM ARCHITECTURE
 M:	Florian Fainelli <f.fainelli@gmail.com>
 L:	linux-arm-kernel@lists.infradead.org
-T:	git git://git.github.com/brcm/linux.git
+T:	git git://github.com/broadcom/arm-bcm63xx.git
 S:	Maintained
 F:	arch/arm/mach-bcm/bcm63xx.c
 F:	arch/arm/include/debug/bcm63xx.S
@@ -2151,6 +2155,7 @@ M:	Brian Norris <computersforpeace@gmail.com>
 M:	Gregory Fong <gregory.0xf0@gmail.com>
 M:	Florian Fainelli <f.fainelli@gmail.com>
 L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+T:	git git://github.com/broadcom/stblinux.git
 S:	Maintained
 F:	arch/arm/mach-bcm/*brcmstb*
 F:	arch/arm/boot/dts/bcm7*.dts*
@@ -2160,6 +2165,7 @@ BROADCOM BMIPS MIPS ARCHITECTURE
 M:	Kevin Cernekee <cernekee@gmail.com>
 M:	Florian Fainelli <f.fainelli@gmail.com>
 L:	linux-mips@linux-mips.org
+T:	git git://github.com/broadcom/stblinux.git
 S:	Maintained
 F:	arch/mips/bmips/*
 F:	arch/mips/include/asm/mach-bmips/*
@@ -2202,7 +2208,7 @@ M:	Ray Jui <rjui@broadcom.com>
 M:	Scott Branden <sbranden@broadcom.com>
 L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 L:	bcm-kernel-feedback-list@broadcom.com
-T:	git git://git.github.com/brcm/linux.git
+T:	git git://github.com/broadcom/cygnus-linux.git
 S:	Maintained
 N:	iproc
 N:	cygnus
@@ -6977,6 +6983,12 @@ M:	Paul Walmsley <paul@pwsan.com>
 L:	linux-omap@vger.kernel.org
 S:	Maintained
 F:	arch/arm/mach-omap2/omap_hwmod.*
+
+OMAP HWMOD DATA
+M:	Paul Walmsley <paul@pwsan.com>
+L:	linux-omap@vger.kernel.org
+S:	Maintained
+F:	arch/arm/mach-omap2/omap_hwmod*data*
 
 OMAP HWMOD DATA FOR OMAP4-BASED DEVICES
 M:	Benoît Cousson <bcousson@baylibre.com>
