@@ -340,17 +340,6 @@ static struct device_type mtd_devtype = {
 	.release	= mtd_release,
 };
 
-static int mtd_reboot_notifier(struct notifier_block *n, unsigned long state,
-			       void *cmd)
-{
-	struct mtd_info *mtd;
-
-	mtd = container_of(n, struct mtd_info, reboot_notifier);
-	mtd->_reboot(mtd);
-
-	return NOTIFY_DONE;
-}
-
 #ifndef CONFIG_MMU
 unsigned mtd_mmap_capabilities(struct mtd_info *mtd)
 {
@@ -367,6 +356,17 @@ unsigned mtd_mmap_capabilities(struct mtd_info *mtd)
 }
 EXPORT_SYMBOL_GPL(mtd_mmap_capabilities);
 #endif
+
+static int mtd_reboot_notifier(struct notifier_block *n, unsigned long state,
+			       void *cmd)
+{
+	struct mtd_info *mtd;
+
+	mtd = container_of(n, struct mtd_info, reboot_notifier);
+	mtd->_reboot(mtd);
+
+	return NOTIFY_DONE;
+}
 
 /**
  *	add_mtd_device - register an MTD device
