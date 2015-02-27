@@ -22,9 +22,6 @@
 #include <linux/init.h>
 #include <linux/sched.h>
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/clk.h>
-
 #include "clk.h"
 
 static DEFINE_SPINLOCK(enable_lock);
@@ -79,6 +76,9 @@ struct clk_core {
 #endif
 	struct kref		ref;
 };
+
+#define CREATE_TRACE_POINTS
+#include <trace/events/clk.h>
 
 struct clk {
 	struct clk_core	*core;
