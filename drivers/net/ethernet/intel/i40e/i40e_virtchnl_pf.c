@@ -1,7 +1,7 @@
 /*******************************************************************************
  *
  * Intel Ethernet Controller XL710 Family Linux Driver
- * Copyright(c) 2013 - 2014 Intel Corporation.
+ * Copyright(c) 2013 - 2015 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -403,9 +403,6 @@ static int i40e_alloc_vsi_res(struct i40e_vf *vf, enum i40e_vsi_type type)
 		u8 brdcast[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 		vf->lan_vsi_index = vsi->idx;
 		vf->lan_vsi_id = vsi->id;
-		dev_info(&pf->pdev->dev,
-			 "VF %d assigned LAN VSI index %d, VSI id %d\n",
-			 vf->vf_id, vsi->idx, vsi->id);
 		/* If the port VLAN has been configured and then the
 		 * VF driver was removed then the VSI port VLAN
 		 * configuration was destroyed.  Check if there is
@@ -713,74 +710,6 @@ complete_reset:
 }
 
 /**
- * i40e_enable_pf_switch_lb
- * @pf: pointer to the pf structure
- *
- * enable switch loop back or die - no point in a return value
- **/
-void i40e_enable_pf_switch_lb(struct i40e_pf *pf)
-{
-	struct i40e_vsi *vsi = pf->vsi[pf->lan_vsi];
-	struct i40e_vsi_context ctxt;
-	int aq_ret;
-
-	ctxt.seid = pf->main_vsi_seid;
-	ctxt.pf_num = pf->hw.pf_id;
-	ctxt.vf_num = 0;
-	aq_ret = i40e_aq_get_vsi_params(&pf->hw, &ctxt, NULL);
-	if (aq_ret) {
-		dev_info(&pf->pdev->dev,
-			 "%s couldn't get pf vsi config, err %d, aq_err %d\n",
-			 __func__, aq_ret, pf->hw.aq.asq_last_status);
-		return;
-	}
-	ctxt.flags = I40E_AQ_VSI_TYPE_PF;
-	ctxt.info.valid_sections = cpu_to_le16(I40E_AQ_VSI_PROP_SWITCH_VALID);
-	ctxt.info.switch_id |= cpu_to_le16(I40E_AQ_VSI_SW_ID_FLAG_ALLOW_LB);
-
-	aq_ret = i40e_aq_update_vsi_params(&vsi->back->hw, &ctxt, NULL);
-	if (aq_ret) {
-		dev_info(&pf->pdev->dev,
-			 "%s: update vsi switch failed, aq_err=%d\n",
-			 __func__, vsi->back->hw.aq.asq_last_status);
-	}
-}
-
-/**
- * i40e_disable_pf_switch_lb
- * @pf: pointer to the pf structure
- *
- * disable switch loop back or die - no point in a return value
- **/
-static void i40e_disable_pf_switch_lb(struct i40e_pf *pf)
-{
-	struct i40e_vsi *vsi = pf->vsi[pf->lan_vsi];
-	struct i40e_vsi_context ctxt;
-	int aq_ret;
-
-	ctxt.seid = pf->main_vsi_seid;
-	ctxt.pf_num = pf->hw.pf_id;
-	ctxt.vf_num = 0;
-	aq_ret = i40e_aq_get_vsi_params(&pf->hw, &ctxt, NULL);
-	if (aq_ret) {
-		dev_info(&pf->pdev->dev,
-			 "%s couldn't get pf vsi config, err %d, aq_err %d\n",
-			 __func__, aq_ret, pf->hw.aq.asq_last_status);
-		return;
-	}
-	ctxt.flags = I40E_AQ_VSI_TYPE_PF;
-	ctxt.info.valid_sections = cpu_to_le16(I40E_AQ_VSI_PROP_SWITCH_VALID);
-	ctxt.info.switch_id &= ~cpu_to_le16(I40E_AQ_VSI_SW_ID_FLAG_ALLOW_LB);
-
-	aq_ret = i40e_aq_update_vsi_params(&vsi->back->hw, &ctxt, NULL);
-	if (aq_ret) {
-		dev_info(&pf->pdev->dev,
-			 "%s: update vsi switch failed, aq_err=%d\n",
-			 __func__, vsi->back->hw.aq.asq_last_status);
-	}
-}
-
-/**
  * i40e_free_vfs
  * @pf: pointer to the pf structure
  *
@@ -832,7 +761,6 @@ void i40e_free_vfs(struct i40e_pf *pf)
 			bit_idx = (hw->func_caps.vf_base_id + vf_id) % 32;
 			wr32(hw, I40E_GLGEN_VFLRSTAT(reg_idx), (1 << bit_idx));
 		}
-		i40e_disable_pf_switch_lb(pf);
 	} else {
 		dev_warn(&pf->pdev->dev,
 			 "unable to disable SR-IOV because VFs are assigned.\n");
@@ -891,7 +819,6 @@ int i40e_alloc_vfs(struct i40e_pf *pf, u16 num_alloc_vfs)
 	}
 	pf->num_alloc_vfs = num_alloc_vfs;
 
-	i40e_enable_pf_switch_lb(pf);
 err_alloc:
 	if (ret)
 		i40e_free_vfs(pf);
@@ -2427,7 +2354,8 @@ int i40e_ndo_set_vf_spoofchk(struct net_device *netdev, int vf_id, bool enable)
 	ctxt.pf_num = pf->hw.pf_id;
 	ctxt.info.valid_sections = cpu_to_le16(I40E_AQ_VSI_PROP_SECURITY_VALID);
 	if (enable)
-		ctxt.info.sec_flags |= I40E_AQ_VSI_SEC_FLAG_ENABLE_MAC_CHK;
+		ctxt.info.sec_flags |= (I40E_AQ_VSI_SEC_FLAG_ENABLE_VLAN_CHK |
+					I40E_AQ_VSI_SEC_FLAG_ENABLE_MAC_CHK);
 	ret = i40e_aq_update_vsi_params(hw, &ctxt, NULL);
 	if (ret) {
 		dev_err(&pf->pdev->dev, "Error %d updating VSI parameters\n",
