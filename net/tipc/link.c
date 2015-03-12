@@ -344,6 +344,7 @@ void tipc_link_delete_list(struct net *net, unsigned int bearer_id,
 	struct tipc_net *tn = net_generic(net, tipc_net_id);
 	struct tipc_link *link;
 	struct tipc_node *node;
+	bool del_link;
 
 	rcu_read_lock();
 	list_for_each_entry_rcu(node, &tn->node_list, list) {
@@ -353,12 +354,13 @@ void tipc_link_delete_list(struct net *net, unsigned int bearer_id,
 			tipc_node_unlock(node);
 			continue;
 		}
+		del_link = !tipc_link_is_up(link) && !link->exp_msg_count;
 		tipc_link_reset(link);
 		if (del_timer(&link->timer))
 			tipc_link_put(link);
 		link->flags |= LINK_STOPPED;
 		/* Delete link now, or when failover is finished: */
-		if (shutting_down || !tipc_node_is_up(node))
+		if (shutting_down || !tipc_node_is_up(node) || del_link)
 			tipc_link_delete(link);
 		tipc_node_unlock(node);
 	}
@@ -464,10 +466,11 @@ void tipc_link_reset(struct tipc_link *l_ptr)
 	/* Clean up all queues, except inputq: */
 	__skb_queue_purge(&l_ptr->outqueue);
 	__skb_queue_purge(&l_ptr->deferred_queue);
-	skb_queue_splice_init(&l_ptr->wakeupq, &l_ptr->inputq);
-	if (!skb_queue_empty(&l_ptr->inputq))
+	if (!owner->inputq)
+		owner->inputq = &l_ptr->inputq;
+	skb_queue_splice_init(&l_ptr->wakeupq, owner->inputq);
+	if (!skb_queue_empty(owner->inputq))
 		owner->action_flags |= TIPC_MSG_EVT;
-	owner->inputq = &l_ptr->inputq;
 	l_ptr->next_out = NULL;
 	l_ptr->unacked_window = 0;
 	l_ptr->checkpoint = 1;
