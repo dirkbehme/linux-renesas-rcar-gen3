@@ -1,7 +1,7 @@
 /*
- * arch/arm/mach-at91/include/mach/io.h
+ * Low-level power-management support for Alpine platform.
  *
- *  Copyright (C) 2003 SAN People
+ * Copyright (C) 2015 Annapurna Labs Ltd.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,16 +12,15 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __ASM_ARCH_IO_H
-#define __ASM_ARCH_IO_H
+#ifndef __ALPINE_CPU_PM_H__
+#define __ALPINE_CPU_PM_H__
 
-#define IO_SPACE_LIMIT		0xFFFFFFFF
-#define __io(a)			__typesafe_io(a)
+/* Alpine CPU Power Management Services Initialization */
+void alpine_cpu_pm_init(void);
 
-#endif
+/* Wake-up a CPU */
+int alpine_cpu_wakeup(unsigned int phys_cpu, uint32_t phys_resume_addr);
+
+#endif /* __ALPINE_CPU_PM_H__ */
