@@ -30,6 +30,7 @@ config ARM_GIC_V3_ITS
 config ARM_NVIC
 	bool
 	select IRQ_DOMAIN
+	select IRQ_DOMAIN_HIERARCHY
 	select GENERIC_IRQ_CHIP
 
 config ARM_VIC
@@ -109,6 +110,13 @@ config RENESAS_INTC_IRQPIN
 config RENESAS_IRQC
 	bool
 	select IRQ_DOMAIN
+
+config ST_IRQCHIP
+	bool
+	select REGMAP
+	select MFD_SYSCON
+	help
+	  Enables SysCfg Controlled IRQs on STi based platforms.
 
 config TB10X_IRQC
 	bool
