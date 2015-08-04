@@ -112,7 +112,7 @@ static int wpf_s_stream(struct v4l2_subdev *subdev, int enable)
 
 	/* Destination stride. */
 	if (!pipe->lif) {
-		struct v4l2_pix_format_mplane *format = &wpf->video.format;
+		struct v4l2_pix_format_mplane *format = &wpf->format;
 
 		vsp1_wpf_write(wpf, VI6_WPF_DSTM_STRIDE_Y,
 			       format->plane_fmt[0].bytesperline);
@@ -130,7 +130,7 @@ static int wpf_s_stream(struct v4l2_subdev *subdev, int enable)
 
 	/* Format */
 	if (!pipe->lif) {
-		const struct vsp1_format_info *fmtinfo = wpf->video.fmtinfo;
+		const struct vsp1_format_info *fmtinfo = wpf->fmtinfo;
 
 		outfmt = fmtinfo->hwfmt << VI6_WPF_OUTFMT_WRFMT_SHIFT;
 
@@ -195,20 +195,17 @@ static struct v4l2_subdev_ops wpf_ops = {
  * Video Device Operations
  */
 
-static void wpf_vdev_queue(struct vsp1_video *video,
-			   struct vsp1_video_buffer *buf)
+static void wpf_set_memory(struct vsp1_rwpf *wpf, struct vsp1_rwpf_memory *mem)
 {
-	struct vsp1_rwpf *wpf = container_of(video, struct vsp1_rwpf, video);
-
-	vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_Y, buf->addr[0]);
-	if (buf->buf.num_planes > 1)
-		vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_C0, buf->addr[1]);
-	if (buf->buf.num_planes > 2)
-		vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_C1, buf->addr[2]);
+	vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_Y, mem->addr[0]);
+	if (mem->num_planes > 1)
+		vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_C0, mem->addr[1]);
+	if (mem->num_planes > 2)
+		vsp1_wpf_write(wpf, VI6_WPF_DSTM_ADDR_C1, mem->addr[2]);
 }
 
-static const struct vsp1_video_operations wpf_vdev_ops = {
-	.queue = wpf_vdev_queue,
+static const struct vsp1_rwpf_operations wpf_vdev_ops = {
+	.set_memory = wpf_set_memory,
 };
 
 /* -----------------------------------------------------------------------------
@@ -218,14 +215,14 @@ static const struct vsp1_video_operations wpf_vdev_ops = {
 struct vsp1_rwpf *vsp1_wpf_create(struct vsp1_device *vsp1, unsigned int index)
 {
 	struct v4l2_subdev *subdev;
-	struct vsp1_video *video;
 	struct vsp1_rwpf *wpf;
-	unsigned int flags;
 	int ret;
 
 	wpf = devm_kzalloc(vsp1->dev, sizeof(*wpf), GFP_KERNEL);
 	if (wpf == NULL)
 		return ERR_PTR(-ENOMEM);
+
+	wpf->ops = &wpf_vdev_ops;
 
 	wpf->max_width = WPF_MAX_WIDTH;
 	wpf->max_height = WPF_MAX_HEIGHT;
@@ -263,34 +260,6 @@ struct vsp1_rwpf *vsp1_wpf_create(struct vsp1_device *vsp1, unsigned int index)
 		ret = wpf->ctrls.error;
 		goto error;
 	}
-
-	/* Initialize the video device. */
-	video = &wpf->video;
-
-	video->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	video->vsp1 = vsp1;
-	video->ops = &wpf_vdev_ops;
-
-	ret = vsp1_video_init(video, &wpf->entity);
-	if (ret < 0)
-		goto error;
-
-	wpf->entity.video = video;
-
-	/* Connect the video device to the WPF. All connections are immutable
-	 * except for the WPF0 source link if a LIF is present.
-	 */
-	flags = MEDIA_LNK_FL_ENABLED;
-	if (!(vsp1->pdata.features & VSP1_HAS_LIF) || index != 0)
-		flags |= MEDIA_LNK_FL_IMMUTABLE;
-
-	ret = media_entity_create_link(&wpf->entity.subdev.entity,
-				       RWPF_PAD_SOURCE,
-				       &wpf->video.video.entity, 0, flags);
-	if (ret < 0)
-		goto error;
-
-	wpf->entity.sink = &wpf->video.video.entity;
 
 	return wpf;
 

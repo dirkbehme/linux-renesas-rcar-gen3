@@ -75,8 +75,8 @@ static const struct v4l2_ctrl_ops rpf_ctrl_ops = {
 static int rpf_s_stream(struct v4l2_subdev *subdev, int enable)
 {
 	struct vsp1_rwpf *rpf = to_rwpf(subdev);
-	const struct vsp1_format_info *fmtinfo = rpf->video.fmtinfo;
-	const struct v4l2_pix_format_mplane *format = &rpf->video.format;
+	const struct vsp1_format_info *fmtinfo = rpf->fmtinfo;
+	const struct v4l2_pix_format_mplane *format = &rpf->format;
 	const struct v4l2_rect *crop = &rpf->crop;
 	u32 pstride;
 	u32 infmt;
@@ -186,30 +186,28 @@ static struct v4l2_subdev_ops rpf_ops = {
  * Video Device Operations
  */
 
-static void rpf_vdev_queue(struct vsp1_video *video,
-			   struct vsp1_video_buffer *buf)
+static void rpf_set_memory(struct vsp1_rwpf *rpf, struct vsp1_rwpf_memory *mem)
 {
-	struct vsp1_rwpf *rpf = container_of(video, struct vsp1_rwpf, video);
 	unsigned int i;
 
 	for (i = 0; i < 3; ++i)
-		rpf->buf_addr[i] = buf->addr[i];
+		rpf->buf_addr[i] = mem->addr[i];
 
 	if (!vsp1_entity_is_streaming(&rpf->entity))
 		return;
 
 	vsp1_rpf_write(rpf, VI6_RPF_SRCM_ADDR_Y,
-		       buf->addr[0] + rpf->offsets[0]);
-	if (buf->buf.num_planes > 1)
+		       mem->addr[0] + rpf->offsets[0]);
+	if (mem->num_planes > 1)
 		vsp1_rpf_write(rpf, VI6_RPF_SRCM_ADDR_C0,
-			       buf->addr[1] + rpf->offsets[1]);
-	if (buf->buf.num_planes > 2)
+			       mem->addr[1] + rpf->offsets[1]);
+	if (mem->num_planes > 2)
 		vsp1_rpf_write(rpf, VI6_RPF_SRCM_ADDR_C1,
-			       buf->addr[2] + rpf->offsets[1]);
+			       mem->addr[2] + rpf->offsets[1]);
 }
 
-static const struct vsp1_video_operations rpf_vdev_ops = {
-	.queue = rpf_vdev_queue,
+static const struct vsp1_rwpf_operations rpf_vdev_ops = {
+	.set_memory = rpf_set_memory,
 };
 
 /* -----------------------------------------------------------------------------
@@ -219,13 +217,14 @@ static const struct vsp1_video_operations rpf_vdev_ops = {
 struct vsp1_rwpf *vsp1_rpf_create(struct vsp1_device *vsp1, unsigned int index)
 {
 	struct v4l2_subdev *subdev;
-	struct vsp1_video *video;
 	struct vsp1_rwpf *rpf;
 	int ret;
 
 	rpf = devm_kzalloc(vsp1->dev, sizeof(*rpf), GFP_KERNEL);
 	if (rpf == NULL)
 		return ERR_PTR(-ENOMEM);
+
+	rpf->ops = &rpf_vdev_ops;
 
 	rpf->max_width = RPF_MAX_WIDTH;
 	rpf->max_height = RPF_MAX_HEIGHT;
@@ -263,28 +262,6 @@ struct vsp1_rwpf *vsp1_rpf_create(struct vsp1_device *vsp1, unsigned int index)
 		ret = rpf->ctrls.error;
 		goto error;
 	}
-
-	/* Initialize the video device. */
-	video = &rpf->video;
-
-	video->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	video->vsp1 = vsp1;
-	video->ops = &rpf_vdev_ops;
-
-	ret = vsp1_video_init(video, &rpf->entity);
-	if (ret < 0)
-		goto error;
-
-	rpf->entity.video = video;
-
-	/* Connect the video device to the RPF. */
-	ret = media_entity_create_link(&rpf->video.video.entity, 0,
-				       &rpf->entity.subdev.entity,
-				       RWPF_PAD_SINK,
-				       MEDIA_LNK_FL_ENABLED |
-				       MEDIA_LNK_FL_IMMUTABLE);
-	if (ret < 0)
-		goto error;
 
 	return rpf;
 
