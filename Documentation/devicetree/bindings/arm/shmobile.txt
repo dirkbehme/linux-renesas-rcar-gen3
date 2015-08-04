@@ -57,6 +57,8 @@ Boards:
     compatible = "renesas,lager", "renesas,r8a7790"
   - Marzen
     compatible = "renesas,marzen", "renesas,r8a7779"
+  - Silk
+    compatible = "renesas,silk", "renesas,r8a7794";
 
 Note: Reference Device Tree Implementations are temporary implementations
       to ease the migration from platform devices to Device Tree, and are
