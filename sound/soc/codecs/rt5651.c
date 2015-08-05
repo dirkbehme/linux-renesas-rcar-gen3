@@ -46,7 +46,7 @@ static const struct regmap_range_cfg rt5651_ranges[] = {
 	  .window_len = 0x1, },
 };
 
-static struct reg_default init_list[] = {
+static const struct reg_sequence init_list[] = {
 	{RT5651_PR_BASE + 0x3d,	0x3e00},
 };
 
@@ -378,10 +378,11 @@ static int set_dmic_clk(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct rt5651_priv *rt5651 = snd_soc_codec_get_drvdata(codec);
-	int idx = -EINVAL;
+	int idx, rate;
 
-	idx = rl6231_calc_dmic_clk(rt5651->sysclk);
-
+	rate = rt5651->sysclk / rl6231_get_pre_div(rt5651->regmap,
+		RT5651_ADDA_CLK1, RT5651_I2S_PD1_SFT);
+	idx = rl6231_calc_dmic_clk(rate);
 	if (idx < 0)
 		dev_err(codec->dev, "Failed to set DMIC clock\n");
 	else
@@ -1769,7 +1770,7 @@ static int rt5651_i2c_probe(struct i2c_client *i2c,
 	regmap_read(rt5651->regmap, RT5651_DEVICE_ID, &ret);
 	if (ret != RT5651_DEVICE_ID_VALUE) {
 		dev_err(&i2c->dev,
-			"Device with ID register %x is not rt5651\n", ret);
+			"Device with ID register %#x is not rt5651\n", ret);
 		return -ENODEV;
 	}
 
@@ -1806,7 +1807,6 @@ static int rt5651_i2c_remove(struct i2c_client *i2c)
 static struct i2c_driver rt5651_i2c_driver = {
 	.driver = {
 		.name = "rt5651",
-		.owner = THIS_MODULE,
 	},
 	.probe = rt5651_i2c_probe,
 	.remove   = rt5651_i2c_remove,
