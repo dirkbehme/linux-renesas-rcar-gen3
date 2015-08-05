@@ -20,26 +20,27 @@
 
 #include "vsp1.h"
 #include "vsp1_entity.h"
-#include "vsp1_video.h"
 
 bool vsp1_entity_is_streaming(struct vsp1_entity *entity)
 {
+	unsigned long flags;
 	bool streaming;
 
-	mutex_lock(&entity->lock);
+	spin_lock_irqsave(&entity->lock, flags);
 	streaming = entity->streaming;
-	mutex_unlock(&entity->lock);
+	spin_unlock_irqrestore(&entity->lock, flags);
 
 	return streaming;
 }
 
 int vsp1_entity_set_streaming(struct vsp1_entity *entity, bool streaming)
 {
+	unsigned long flags;
 	int ret;
 
-	mutex_lock(&entity->lock);
+	spin_lock_irqsave(&entity->lock, flags);
 	entity->streaming = streaming;
-	mutex_unlock(&entity->lock);
+	spin_unlock_irqrestore(&entity->lock, flags);
 
 	if (!streaming)
 		return 0;
@@ -49,12 +50,24 @@ int vsp1_entity_set_streaming(struct vsp1_entity *entity, bool streaming)
 
 	ret = v4l2_ctrl_handler_setup(entity->subdev.ctrl_handler);
 	if (ret < 0) {
-		mutex_lock(&entity->lock);
+		spin_lock_irqsave(&entity->lock, flags);
 		entity->streaming = false;
-		mutex_unlock(&entity->lock);
+		spin_unlock_irqrestore(&entity->lock, flags);
 	}
 
 	return ret;
+}
+
+void vsp1_entity_route_setup(struct vsp1_entity *source)
+{
+	struct vsp1_entity *sink;
+
+	if (source->route->reg == 0)
+		return;
+
+	sink = container_of(source->sink, struct vsp1_entity, subdev.entity);
+	vsp1_write(source->vsp1, source->route->reg,
+		   sink->route->inputs[source->sink_pad]);
 }
 
 /* -----------------------------------------------------------------------------
@@ -193,7 +206,7 @@ int vsp1_entity_init(struct vsp1_device *vsp1, struct vsp1_entity *entity,
 	if (i == ARRAY_SIZE(vsp1_routes))
 		return -EINVAL;
 
-	mutex_init(&entity->lock);
+	spin_lock_init(&entity->lock);
 
 	entity->vsp1 = vsp1;
 	entity->source_pad = num_pads - 1;
@@ -223,11 +236,7 @@ int vsp1_entity_init(struct vsp1_device *vsp1, struct vsp1_entity *entity,
 
 void vsp1_entity_destroy(struct vsp1_entity *entity)
 {
-	if (entity->video)
-		vsp1_video_cleanup(entity->video);
 	if (entity->subdev.ctrl_handler)
 		v4l2_ctrl_handler_free(entity->subdev.ctrl_handler);
 	media_entity_cleanup(&entity->subdev.entity);
-
-	mutex_destroy(&entity->lock);
 }

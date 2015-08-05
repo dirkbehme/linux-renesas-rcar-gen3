@@ -238,7 +238,7 @@
 #define VI6_WPF_SZCLIP_EN		(1 << 28)
 #define VI6_WPF_SZCLIP_OFST_MASK	(0xff << 16)
 #define VI6_WPF_SZCLIP_OFST_SHIFT	16
-#define VI6_WPF_SZCLIP_SIZE_MASK	(0x1fff << 0)
+#define VI6_WPF_SZCLIP_SIZE_MASK	(0xfff << 0)
 #define VI6_WPF_SZCLIP_SIZE_SHIFT	0
 
 #define VI6_WPF_OUTFMT			0x100c
@@ -304,9 +304,9 @@
 #define VI6_DPR_HST_ROUTE		0x2044
 #define VI6_DPR_HSI_ROUTE		0x2048
 #define VI6_DPR_BRU_ROUTE		0x204c
-#define VI6_DPR_ROUTE_FXA_MASK		(0xff << 8)
+#define VI6_DPR_ROUTE_FXA_MASK		(0xff << 16)
 #define VI6_DPR_ROUTE_FXA_SHIFT		16
-#define VI6_DPR_ROUTE_FP_MASK		(0xff << 8)
+#define VI6_DPR_ROUTE_FP_MASK		(0x3f << 8)
 #define VI6_DPR_ROUTE_FP_SHIFT		8
 #define VI6_DPR_ROUTE_RT_MASK		(0x3f << 0)
 #define VI6_DPR_ROUTE_RT_SHIFT		0
@@ -322,7 +322,7 @@
 #define VI6_DPR_NODE_SRU		16
 #define VI6_DPR_NODE_UDS(n)		(17 + (n))
 #define VI6_DPR_NODE_LUT		22
-#define VI6_DPR_NODE_BRU_IN(n)		(23 + (n))
+#define VI6_DPR_NODE_BRU_IN(n)		(((n) <= 3) ? 23 + (n) : 49)
 #define VI6_DPR_NODE_BRU_OUT		27
 #define VI6_DPR_NODE_CLU		29
 #define VI6_DPR_NODE_HST		30
@@ -504,7 +504,7 @@
 #define VI6_BRU_VIRRPF_COL_BCB_MASK	(0xff << 0)
 #define VI6_BRU_VIRRPF_COL_BCB_SHIFT	0
 
-#define VI6_BRU_CTRL(n)			(0x2c10 + (n) * 8)
+#define VI6_BRU_CTRL(n)			(0x2c10 + (n) * 8 + ((n) <= 3 ? 0 : 4))
 #define VI6_BRU_CTRL_RBC		(1 << 31)
 #define VI6_BRU_CTRL_DSTSEL_BRUIN(n)	((n) << 20)
 #define VI6_BRU_CTRL_DSTSEL_VRPF	(4 << 20)
@@ -517,7 +517,7 @@
 #define VI6_BRU_CTRL_AROP(rop)		((rop) << 0)
 #define VI6_BRU_CTRL_AROP_MASK		(0xf << 0)
 
-#define VI6_BRU_BLD(n)			(0x2c14 + (n) * 8)
+#define VI6_BRU_BLD(n)			(0x2c14 + (n) * 8 + ((n) <= 3 ? 0 : 4))
 #define VI6_BRU_BLD_CBES		(1 << 31)
 #define VI6_BRU_BLD_CCMDX_DST_A		(0 << 28)
 #define VI6_BRU_BLD_CCMDX_255_DST_A	(1 << 28)

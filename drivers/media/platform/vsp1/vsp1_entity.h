@@ -14,12 +14,11 @@
 #define __VSP1_ENTITY_H__
 
 #include <linux/list.h>
-#include <linux/mutex.h>
+#include <linux/spinlock.h>
 
 #include <media/v4l2-subdev.h>
 
 struct vsp1_device;
-struct vsp1_video;
 
 enum vsp1_entity_type {
 	VSP1_ENTITY_BRU,
@@ -32,6 +31,8 @@ enum vsp1_entity_type {
 	VSP1_ENTITY_UDS,
 	VSP1_ENTITY_WPF,
 };
+
+#define VSP1_ENTITY_MAX_INPUTS		5	/* For the BRU */
 
 /*
  * struct vsp1_route - Entity routing configuration
@@ -49,7 +50,7 @@ struct vsp1_route {
 	enum vsp1_entity_type type;
 	unsigned int index;
 	unsigned int reg;
-	unsigned int inputs[4];
+	unsigned int inputs[VSP1_ENTITY_MAX_INPUTS];
 };
 
 struct vsp1_entity {
@@ -71,9 +72,7 @@ struct vsp1_entity {
 	struct v4l2_subdev subdev;
 	struct v4l2_mbus_framefmt *formats;
 
-	struct vsp1_video *video;
-
-	struct mutex lock;		/* Protects the streaming field */
+	spinlock_t lock;		/* Protects the streaming field */
 	bool streaming;
 };
 
@@ -98,5 +97,7 @@ void vsp1_entity_init_formats(struct v4l2_subdev *subdev,
 
 bool vsp1_entity_is_streaming(struct vsp1_entity *entity);
 int vsp1_entity_set_streaming(struct vsp1_entity *entity, bool streaming);
+
+void vsp1_entity_route_setup(struct vsp1_entity *source);
 
 #endif /* __VSP1_ENTITY_H__ */
