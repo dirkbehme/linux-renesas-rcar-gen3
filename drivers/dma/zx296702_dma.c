@@ -101,6 +101,7 @@ struct zx_dma_chan {
 	struct dma_slave_config slave_cfg;
 	int			id; /* Request phy chan id */
 	u32			ccfg;
+	u32			cyclic;
 	struct virt_dma_chan	vc;
 	struct zx_dma_phy	*phy;
 	struct list_head	node;
@@ -143,6 +144,7 @@ static void zx_dma_terminate_chan(struct zx_dma_phy *phy, struct zx_dma_dev *d)
 
 	val = readl_relaxed(phy->base + REG_ZX_CTRL);
 	val &= ~ZX_CH_ENABLE;
+	val |= ZX_FORCE_CLOSE;
 	writel_relaxed(val, phy->base + REG_ZX_CTRL);
 
 	val = 0x1 << phy->idx;
@@ -278,7 +280,7 @@ static irqreturn_t zx_dma_int_handler(int irq, void *dev_id)
 	u32 serr = readl_relaxed(d->base + REG_ZX_SRC_ERR_IRQ);
 	u32 derr = readl_relaxed(d->base + REG_ZX_DST_ERR_IRQ);
 	u32 cfg = readl_relaxed(d->base + REG_ZX_CFG_ERR_IRQ);
-	u32 i, irq_chan = 0;
+	u32 i, irq_chan = 0, task = 0;
 
 	while (tc) {
 		i = __ffs(tc);
@@ -289,11 +291,16 @@ static irqreturn_t zx_dma_int_handler(int irq, void *dev_id)
 			unsigned long flags;
 
 			spin_lock_irqsave(&c->vc.lock, flags);
-			vchan_cookie_complete(&p->ds_run->vd);
-			p->ds_done = p->ds_run;
+			if (c->cyclic) {
+				vchan_cyclic_callback(&p->ds_run->vd);
+			} else {
+				vchan_cookie_complete(&p->ds_run->vd);
+				p->ds_done = p->ds_run;
+				task = 1;
+			}
 			spin_unlock_irqrestore(&c->vc.lock, flags);
+			irq_chan |= BIT(i);
 		}
-		irq_chan |= BIT(i);
 	}
 
 	if (serr || derr || cfg)
@@ -305,12 +312,9 @@ static irqreturn_t zx_dma_int_handler(int irq, void *dev_id)
 	writel_relaxed(derr, d->base + REG_ZX_DST_ERR_IRQ_RAW);
 	writel_relaxed(cfg, d->base + REG_ZX_CFG_ERR_IRQ_RAW);
 
-	if (irq_chan) {
+	if (task)
 		zx_dma_task(d);
-		return IRQ_HANDLED;
-	} else {
-		return IRQ_NONE;
-	}
+	return IRQ_HANDLED;
 }
 
 static void zx_dma_free_chan_resources(struct dma_chan *chan)
@@ -473,15 +477,16 @@ static int zx_pre_config(struct zx_dma_chan *c, enum dma_transfer_direction dir)
 		c->dev_addr = cfg->dst_addr;
 		/* dst len is calculated from src width, len and dst width.
 		 * We need make sure dst len not exceed MAX LEN.
+		 * Trailing single transaction that does not fill a full
+		 * burst also require identical src/dst data width.
 		 */
 		dst_width = zx_dma_burst_width(cfg->dst_addr_width);
-		maxburst = cfg->dst_maxburst * cfg->dst_addr_width
-				/ DMA_SLAVE_BUSWIDTH_8_BYTES;
+		maxburst = cfg->dst_maxburst;
 		maxburst = maxburst < ZX_MAX_BURST_LEN ?
 				maxburst : ZX_MAX_BURST_LEN;
 		c->ccfg = ZX_DST_FIFO_MODE | ZX_CH_ENABLE
 			| ZX_SRC_BURST_LEN(maxburst - 1)
-			| ZX_SRC_BURST_WIDTH(ZX_DMA_WIDTH_64BIT)
+			| ZX_SRC_BURST_WIDTH(dst_width)
 			| ZX_DST_BURST_WIDTH(dst_width);
 		break;
 	case DMA_DEV_TO_MEM:
@@ -493,7 +498,7 @@ static int zx_pre_config(struct zx_dma_chan *c, enum dma_transfer_direction dir)
 		c->ccfg = ZX_SRC_FIFO_MODE | ZX_CH_ENABLE
 			| ZX_SRC_BURST_LEN(maxburst - 1)
 			| ZX_SRC_BURST_WIDTH(src_width)
-			| ZX_DST_BURST_WIDTH(ZX_DMA_WIDTH_64BIT);
+			| ZX_DST_BURST_WIDTH(src_width);
 		break;
 	default:
 		return -EINVAL;
@@ -534,6 +539,7 @@ static struct dma_async_tx_descriptor *zx_dma_prep_memcpy(
 		len -= copy;
 	} while (len);
 
+	c->cyclic = 0;
 	ds->desc_hw[num - 1].lli = 0;	/* end of link */
 	ds->desc_hw[num - 1].ctr |= ZX_IRQ_ENABLE_ALL;
 	return vchan_tx_prep(&c->vc, &ds->vd, flags);
@@ -566,6 +572,7 @@ static struct dma_async_tx_descriptor *zx_dma_prep_slave_sg(
 	if (!ds)
 		return NULL;
 
+	c->cyclic = 0;
 	num = 0;
 	for_each_sg(sgl, sg, sglen, i) {
 		addr = sg_dma_address(sg);
@@ -593,6 +600,49 @@ static struct dma_async_tx_descriptor *zx_dma_prep_slave_sg(
 	ds->desc_hw[num - 1].lli = 0;	/* end of link */
 	ds->desc_hw[num - 1].ctr |= ZX_IRQ_ENABLE_ALL;
 	ds->size = total;
+	return vchan_tx_prep(&c->vc, &ds->vd, flags);
+}
+
+static struct dma_async_tx_descriptor *zx_dma_prep_dma_cyclic(
+		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+		size_t period_len, enum dma_transfer_direction dir,
+		unsigned long flags)
+{
+	struct zx_dma_chan *c = to_zx_chan(chan);
+	struct zx_dma_desc_sw *ds;
+	dma_addr_t src = 0, dst = 0;
+	int num_periods = buf_len / period_len;
+	int buf = 0, num = 0;
+
+	if (period_len > DMA_MAX_SIZE) {
+		dev_err(chan->device->dev, "maximum period size exceeded\n");
+		return NULL;
+	}
+
+	if (zx_pre_config(c, dir))
+		return NULL;
+
+	ds = zx_alloc_desc_resource(num_periods, chan);
+	if (!ds)
+		return NULL;
+	c->cyclic = 1;
+
+	while (buf < buf_len) {
+		if (dir == DMA_MEM_TO_DEV) {
+			src = dma_addr;
+			dst = c->dev_addr;
+		} else if (dir == DMA_DEV_TO_MEM) {
+			src = c->dev_addr;
+			dst = dma_addr;
+		}
+		zx_dma_fill_desc(ds, dst, src, period_len, num++,
+				 c->ccfg | ZX_IRQ_ENABLE_ALL);
+		dma_addr += period_len;
+		buf += period_len;
+	}
+
+	ds->desc_hw[num - 1].lli = ds->desc_hw_lli;
+	ds->size = buf_len;
 	return vchan_tx_prep(&c->vc, &ds->vd, flags);
 }
 
@@ -637,6 +687,30 @@ static int zx_dma_terminate_all(struct dma_chan *chan)
 	}
 	spin_unlock_irqrestore(&c->vc.lock, flags);
 	vchan_dma_desc_free_list(&c->vc, &head);
+
+	return 0;
+}
+
+static int zx_dma_transfer_pause(struct dma_chan *chan)
+{
+	struct zx_dma_chan *c = to_zx_chan(chan);
+	u32 val = 0;
+
+	val = readl_relaxed(c->phy->base + REG_ZX_CTRL);
+	val &= ~ZX_CH_ENABLE;
+	writel_relaxed(val, c->phy->base + REG_ZX_CTRL);
+
+	return 0;
+}
+
+static int zx_dma_transfer_resume(struct dma_chan *chan)
+{
+	struct zx_dma_chan *c = to_zx_chan(chan);
+	u32 val = 0;
+
+	val = readl_relaxed(c->phy->base + REG_ZX_CTRL);
+	val |= ZX_CH_ENABLE;
+	writel_relaxed(val, c->phy->base + REG_ZX_CTRL);
 
 	return 0;
 }
@@ -745,9 +819,12 @@ static int zx_dma_probe(struct platform_device *op)
 	d->slave.device_tx_status = zx_dma_tx_status;
 	d->slave.device_prep_dma_memcpy = zx_dma_prep_memcpy;
 	d->slave.device_prep_slave_sg = zx_dma_prep_slave_sg;
+	d->slave.device_prep_dma_cyclic = zx_dma_prep_dma_cyclic;
 	d->slave.device_issue_pending = zx_dma_issue_pending;
 	d->slave.device_config = zx_dma_config;
 	d->slave.device_terminate_all = zx_dma_terminate_all;
+	d->slave.device_pause = zx_dma_transfer_pause;
+	d->slave.device_resume = zx_dma_transfer_resume;
 	d->slave.copy_align = DMA_ALIGN;
 	d->slave.src_addr_widths = ZX_DMA_BUSWIDTHS;
 	d->slave.dst_addr_widths = ZX_DMA_BUSWIDTHS;
