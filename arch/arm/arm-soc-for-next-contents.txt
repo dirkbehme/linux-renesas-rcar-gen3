@@ -22,6 +22,12 @@ next/cleanup
 		ARM: kill off set_irq_flags usage
 	generic/cleanup-irq
 		git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip queue/irq/arm
+	renesas/marzen-removal
+		git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas tags/renesas-marzen-board-removal-for-v4.3
+	fixes
+		Merge branch 'fixes' into next/cleanup
+	patch
+		ARM: ux500: simplify secondary CPU boot
 
 next/soc
 	rockchip/soc
@@ -98,6 +104,18 @@ next/dt
 		https://github.com/Xilinx/linux-xlnx tags/zynq-dt-for-4.3
 	mvevu/dt
 		git://git.infradead.org/linux-mvebu tags/mvebu-dt-4.3-2
+	patch
+		ARM: dts: lpc18xx: add usb otg phy node
+		ARM: dts: lpc18xx: add pl111 lcd controller node
+		ARM: dts: lpc18xx: add pl172 memory-controller node
+		ARM: dts: lpc4357-ea4357: add usb0
+		ARM: dts: lpc4357-ea4357: add emc pins and static memory devices
+		ARM: dts: lpc4357-ea4357: add mmio-gpio leds
+		ARM: dts: lpc4350-hitex-eval: add pinctrl and uart0 muxing
+		ARM: dts: lpc4350-hitex-eval: add ethernet
+		ARM: dts: lpc4350-hitex-eval: add emc pins and static memory devices
+	sunxi/dt
+		https://git.kernel.org/pub/scm/linux/kernel/git/mripard/linux tags/sunxi-dt-for-4.3
 
 next/drivers
 	patch
@@ -131,6 +149,8 @@ next/defconfig
 		git://codeaurora.org/quic/kernel/agross-msm tags/qcom-defconfig-for-4.3
 	mvebu/config2
 		git://git.infradead.org/linux-mvebu tags/mvebu-config-4.3-2
+	sunxi/defconfig
+		https://git.kernel.org/pub/scm/linux/kernel/git/mripard/linux tags/sunxi-defconfig-for-4.3
 
 next/arm64
 	patch
@@ -153,6 +173,11 @@ next/arm64
 		PCI: iproc: Fix BCMA dependency in Kconfig
 	qcom/arm64
 		git://codeaurora.org/quic/kernel/agross-msm tags/qcom-arm64-for-4.3
+	zynq/mp-dt
+		https://github.com/Xilinx/linux-xlnx tags/zynqmp-dt-for-4.3
+	patch
+		arm64: Enable Marvell Berlin SoC family in Kconfig
+		arm64: Enable Marvell Berlin SoC family in defconfig
 
 fixes
 	<no branch> (300bde79f3d86b1af6fcde7b7b2439ecffccbff4)
@@ -165,4 +190,5 @@ fixes
 		git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux tags/imx-fixes-4.2-2
 	patch
 		ARM: dts: keystone: fix dt bindings to use post div register for mainpll
+		ARM: ux500: add an SMP enablement type and move cpu nodes
 
