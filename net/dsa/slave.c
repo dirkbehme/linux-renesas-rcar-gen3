@@ -18,6 +18,8 @@
 #include <net/rtnetlink.h>
 #include <net/switchdev.h>
 #include <linux/if_bridge.h>
+#include <linux/netpoll.h>
+#include <linux/if_vlan.h>
 #include "dsa_priv.h"
 
 /* slave mii_bus handling ***************************************************/
@@ -199,105 +201,6 @@ out:
 	return 0;
 }
 
-static int dsa_slave_fdb_add(struct ndmsg *ndm, struct nlattr *tb[],
-			     struct net_device *dev,
-			     const unsigned char *addr, u16 vid, u16 nlm_flags)
-{
-	struct dsa_slave_priv *p = netdev_priv(dev);
-	struct dsa_switch *ds = p->parent;
-	int ret = -EOPNOTSUPP;
-
-	if (ds->drv->fdb_add)
-		ret = ds->drv->fdb_add(ds, p->port, addr, vid);
-
-	return ret;
-}
-
-static int dsa_slave_fdb_del(struct ndmsg *ndm, struct nlattr *tb[],
-			     struct net_device *dev,
-			     const unsigned char *addr, u16 vid)
-{
-	struct dsa_slave_priv *p = netdev_priv(dev);
-	struct dsa_switch *ds = p->parent;
-	int ret = -EOPNOTSUPP;
-
-	if (ds->drv->fdb_del)
-		ret = ds->drv->fdb_del(ds, p->port, addr, vid);
-
-	return ret;
-}
-
-static int dsa_slave_fill_info(struct net_device *dev, struct sk_buff *skb,
-			       const unsigned char *addr, u16 vid,
-			       bool is_static,
-			       u32 portid, u32 seq, int type,
-			       unsigned int flags)
-{
-	struct nlmsghdr *nlh;
-	struct ndmsg *ndm;
-
-	nlh = nlmsg_put(skb, portid, seq, type, sizeof(*ndm), flags);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	ndm = nlmsg_data(nlh);
-	ndm->ndm_family	 = AF_BRIDGE;
-	ndm->ndm_pad1    = 0;
-	ndm->ndm_pad2    = 0;
-	ndm->ndm_flags	 = NTF_EXT_LEARNED;
-	ndm->ndm_type	 = 0;
-	ndm->ndm_ifindex = dev->ifindex;
-	ndm->ndm_state   = is_static ? NUD_NOARP : NUD_REACHABLE;
-
-	if (nla_put(skb, NDA_LLADDR, ETH_ALEN, addr))
-		goto nla_put_failure;
-
-	if (vid && nla_put_u16(skb, NDA_VLAN, vid))
-		goto nla_put_failure;
-
-	nlmsg_end(skb, nlh);
-	return 0;
-
-nla_put_failure:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
-/* Dump information about entries, in response to GETNEIGH */
-static int dsa_slave_fdb_dump(struct sk_buff *skb, struct netlink_callback *cb,
-			      struct net_device *dev,
-			      struct net_device *filter_dev, int idx)
-{
-	struct dsa_slave_priv *p = netdev_priv(dev);
-	struct dsa_switch *ds = p->parent;
-	unsigned char addr[ETH_ALEN] = { 0 };
-	int ret;
-
-	if (!ds->drv->fdb_getnext)
-		return -EOPNOTSUPP;
-
-	for (; ; idx++) {
-		bool is_static;
-
-		ret = ds->drv->fdb_getnext(ds, p->port, addr, &is_static);
-		if (ret < 0)
-			break;
-
-		if (idx < cb->args[0])
-			continue;
-
-		ret = dsa_slave_fill_info(dev, skb, addr, 0,
-					  is_static,
-					  NETLINK_CB(cb->skb).portid,
-					  cb->nlh->nlmsg_seq,
-					  RTM_NEWNEIGH, NLM_F_MULTI);
-		if (ret < 0)
-			break;
-	}
-
-	return idx;
-}
-
 static int dsa_slave_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
 	struct dsa_slave_priv *p = netdev_priv(dev);
@@ -363,6 +266,115 @@ static int dsa_slave_port_attr_set(struct net_device *dev,
 	return ret;
 }
 
+static int dsa_slave_port_fdb_add(struct net_device *dev,
+				  struct switchdev_obj *obj)
+{
+	struct switchdev_obj_fdb *fdb = &obj->u.fdb;
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+	int err;
+
+	if (obj->trans == SWITCHDEV_TRANS_PREPARE)
+		err = ds->drv->port_fdb_add ? 0 : -EOPNOTSUPP;
+	else if (obj->trans == SWITCHDEV_TRANS_COMMIT)
+		err = ds->drv->port_fdb_add(ds, p->port, fdb->vid, fdb->addr);
+	else
+		err = -EOPNOTSUPP;
+
+	return err;
+}
+
+static int dsa_slave_port_fdb_del(struct net_device *dev,
+				  struct switchdev_obj *obj)
+{
+	struct switchdev_obj_fdb *fdb = &obj->u.fdb;
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+
+	if (!ds->drv->port_fdb_del)
+		return -EOPNOTSUPP;
+
+	return ds->drv->port_fdb_del(ds, p->port, fdb->vid, fdb->addr);
+}
+
+static int dsa_slave_port_fdb_dump(struct net_device *dev,
+				   struct switchdev_obj *obj)
+{
+	struct switchdev_obj_fdb *fdb = &obj->u.fdb;
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+	int err;
+
+	if (!ds->drv->port_fdb_getnext)
+		return -EOPNOTSUPP;
+
+	memset(fdb, 0, sizeof(*fdb));
+
+	for (;;) {
+		err = ds->drv->port_fdb_getnext(ds, p->port, &fdb->vid,
+						fdb->addr, &fdb->is_static);
+		if (err)
+			break;
+
+		err = obj->cb(dev, obj);
+		if (err)
+			break;
+	}
+
+	return err == -ENOENT ? 0 : err;
+}
+
+static int dsa_slave_port_obj_add(struct net_device *dev,
+				  struct switchdev_obj *obj)
+{
+	int err;
+
+	switch (obj->id) {
+	case SWITCHDEV_OBJ_PORT_FDB:
+		err = dsa_slave_port_fdb_add(dev, obj);
+		break;
+	default:
+		err = -EOPNOTSUPP;
+		break;
+	}
+
+	return err;
+}
+
+static int dsa_slave_port_obj_del(struct net_device *dev,
+				  struct switchdev_obj *obj)
+{
+	int err;
+
+	switch (obj->id) {
+	case SWITCHDEV_OBJ_PORT_FDB:
+		err = dsa_slave_port_fdb_del(dev, obj);
+		break;
+	default:
+		err = -EOPNOTSUPP;
+		break;
+	}
+
+	return err;
+}
+
+static int dsa_slave_port_obj_dump(struct net_device *dev,
+				   struct switchdev_obj *obj)
+{
+	int err;
+
+	switch (obj->id) {
+	case SWITCHDEV_OBJ_PORT_FDB:
+		err = dsa_slave_port_fdb_dump(dev, obj);
+		break;
+	default:
+		err = -EOPNOTSUPP;
+		break;
+	}
+
+	return err;
+}
+
 static int dsa_slave_bridge_port_join(struct net_device *dev,
 				      struct net_device *br)
 {
@@ -418,22 +430,51 @@ static int dsa_slave_port_attr_get(struct net_device *dev,
 	return 0;
 }
 
+static inline netdev_tx_t dsa_netpoll_send_skb(struct dsa_slave_priv *p,
+					       struct sk_buff *skb)
+{
+#ifdef CONFIG_NET_POLL_CONTROLLER
+	if (p->netpoll)
+		netpoll_send_skb(p->netpoll, skb);
+#else
+	BUG();
+#endif
+	return NETDEV_TX_OK;
+}
+
 static netdev_tx_t dsa_slave_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct sk_buff *nskb;
 
-	return p->xmit(skb, dev);
-}
+	dev->stats.tx_packets++;
+	dev->stats.tx_bytes += skb->len;
 
-static netdev_tx_t dsa_slave_notag_xmit(struct sk_buff *skb,
-					struct net_device *dev)
-{
-	struct dsa_slave_priv *p = netdev_priv(dev);
+	/* Transmit function may have to reallocate the original SKB */
+	nskb = p->xmit(skb, dev);
+	if (!nskb)
+		return NETDEV_TX_OK;
 
-	skb->dev = p->parent->dst->master_netdev;
-	dev_queue_xmit(skb);
+	/* SKB for netpoll still need to be mangled with the protocol-specific
+	 * tag to be successfully transmitted
+	 */
+	if (unlikely(netpoll_tx_running(dev)))
+		return dsa_netpoll_send_skb(p, nskb);
+
+	/* Queue the SKB for transmission on the parent interface, but
+	 * do not modify its EtherType
+	 */
+	nskb->dev = p->parent->dst->master_netdev;
+	dev_queue_xmit(nskb);
 
 	return NETDEV_TX_OK;
+}
+
+static struct sk_buff *dsa_slave_notag_xmit(struct sk_buff *skb,
+					    struct net_device *dev)
+{
+	/* Just return the original SKB */
+	return skb;
 }
 
 
@@ -665,6 +706,49 @@ static int dsa_slave_get_eee(struct net_device *dev, struct ethtool_eee *e)
 	return ret;
 }
 
+#ifdef CONFIG_NET_POLL_CONTROLLER
+static int dsa_slave_netpoll_setup(struct net_device *dev,
+				   struct netpoll_info *ni)
+{
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+	struct net_device *master = ds->dst->master_netdev;
+	struct netpoll *netpoll;
+	int err = 0;
+
+	netpoll = kzalloc(sizeof(*netpoll), GFP_KERNEL);
+	if (!netpoll)
+		return -ENOMEM;
+
+	err = __netpoll_setup(netpoll, master);
+	if (err) {
+		kfree(netpoll);
+		goto out;
+	}
+
+	p->netpoll = netpoll;
+out:
+	return err;
+}
+
+static void dsa_slave_netpoll_cleanup(struct net_device *dev)
+{
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct netpoll *netpoll = p->netpoll;
+
+	if (!netpoll)
+		return;
+
+	p->netpoll = NULL;
+
+	__netpoll_free_async(netpoll);
+}
+
+static void dsa_slave_poll_controller(struct net_device *dev)
+{
+}
+#endif
+
 static const struct ethtool_ops dsa_slave_ethtool_ops = {
 	.get_settings		= dsa_slave_get_settings,
 	.set_settings		= dsa_slave_set_settings,
@@ -692,16 +776,24 @@ static const struct net_device_ops dsa_slave_netdev_ops = {
 	.ndo_change_rx_flags	= dsa_slave_change_rx_flags,
 	.ndo_set_rx_mode	= dsa_slave_set_rx_mode,
 	.ndo_set_mac_address	= dsa_slave_set_mac_address,
-	.ndo_fdb_add		= dsa_slave_fdb_add,
-	.ndo_fdb_del		= dsa_slave_fdb_del,
-	.ndo_fdb_dump		= dsa_slave_fdb_dump,
+	.ndo_fdb_add		= switchdev_port_fdb_add,
+	.ndo_fdb_del		= switchdev_port_fdb_del,
+	.ndo_fdb_dump		= switchdev_port_fdb_dump,
 	.ndo_do_ioctl		= dsa_slave_ioctl,
 	.ndo_get_iflink		= dsa_slave_get_iflink,
+#ifdef CONFIG_NET_POLL_CONTROLLER
+	.ndo_netpoll_setup	= dsa_slave_netpoll_setup,
+	.ndo_netpoll_cleanup	= dsa_slave_netpoll_cleanup,
+	.ndo_poll_controller	= dsa_slave_poll_controller,
+#endif
 };
 
 static const struct switchdev_ops dsa_slave_switchdev_ops = {
 	.switchdev_port_attr_get	= dsa_slave_port_attr_get,
 	.switchdev_port_attr_set	= dsa_slave_port_attr_set,
+	.switchdev_port_obj_add		= dsa_slave_port_obj_add,
+	.switchdev_port_obj_del		= dsa_slave_port_obj_del,
+	.switchdev_port_obj_dump	= dsa_slave_port_obj_dump,
 };
 
 static void dsa_slave_adjust_link(struct net_device *dev)
