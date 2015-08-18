@@ -274,6 +274,17 @@
 					#clock-cells = <1>;
 					clock-indices = <R8A7795_CLK_SCIF2>;
 				};
+
+				mstp8_clks: mstp8_clks@e6150990 {
+					compatible = "renesas,r8a7795-mstp-clocks",
+						     "renesas,cpg-mstp-clocks";
+					reg = <0 0xe6150990 0 4>, <0 0xe61509a0 0 4>;
+					clocks =  <&s3d2_clk>;
+					#clock-cells = <1>;
+					clock-indices = <R8A7795_CLK_ETHERAVB>;
+					clock-output-names = "avb";
+				};
+
 			};
 		};
 
@@ -364,4 +375,5 @@
 			status = "disabled";
 		};
 	};
+
 };
