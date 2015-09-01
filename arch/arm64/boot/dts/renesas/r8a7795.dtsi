@@ -257,6 +257,7 @@
 				clock-output-names = "main", "pll0", "pll1",
 						     "pll2", "pll3", "pll4";
 				#power-domain-cells = <0>;
+				renesas,modemr = <&rst 0x60>;
 
 				/* Module Standby and Software Reset */
 				mssr: mssr@e6150130 {
