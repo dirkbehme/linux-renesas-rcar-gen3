@@ -204,6 +204,14 @@ config FSL_RAID
           the capability to offload memcpy, xor and pq computation
 	  for raid5/6.
 
+config IDMA64
+	tristate "Intel integrated DMA 64-bit support"
+	select DMA_ENGINE
+	select DMA_VIRTUAL_CHANNELS
+	help
+	  Enable DMA support for Intel Low Power Subsystem such as found on
+	  Intel Skylake PCH.
+
 config IMG_MDC_DMA
 	tristate "IMG MDC support"
 	depends on MIPS || COMPILE_TEST
