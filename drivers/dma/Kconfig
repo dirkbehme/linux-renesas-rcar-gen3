@@ -147,7 +147,7 @@ config DMA_SA11X0
 
 config DMA_SUN4I
 	tristate "Allwinner A10 DMA SoCs support"
-	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || COMPILE_TEST
+	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I
 	default (MACH_SUN4I || MACH_SUN5I || MACH_SUN7I)
 	select DMA_ENGINE
 	select DMA_OF
@@ -236,6 +236,14 @@ config IMX_SDMA
 	help
 	  Support the i.MX SDMA engine. This engine is integrated into
 	  Freescale i.MX25/31/35/51/53/6 chips.
+
+config IDMA64
+	tristate "Intel integrated DMA 64-bit support"
+	select DMA_ENGINE
+	select DMA_VIRTUAL_CHANNELS
+	help
+	  Enable DMA support for Intel Low Power Subsystem such as found on
+	  Intel Skylake PCH.
 
 config INTEL_IOATDMA
 	tristate "Intel I/OAT DMA support"
