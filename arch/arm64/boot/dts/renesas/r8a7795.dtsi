@@ -70,31 +70,8 @@
 			#clock-cells = <1>;
 			ranges;
 
-			zt_clk: zt {
-				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
-				#clock-cells = <0>;
-				clock-div = <4>;
-				clock-mult = <1>;
-			};
-
-			ztr_clk: ztr {
-				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
-				#clock-cells = <0>;
-				clock-div = <6>;
-				clock-mult = <1>;
-			};
-
-			ztrd2_clk: ztrd2 {
-				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
-				#clock-cells = <0>;
-				clock-div = <12>;
-				clock-mult = <1>;
-			};
-
-			zx_clk: zx {
+			/* Fixed factor clocks */
+			pll1_div2_clk: pll1_div2 {
 				compatible = "fixed-factor-clock";
 				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
 				#clock-cells = <0>;
@@ -102,9 +79,41 @@
 				clock-mult = <1>;
 			};
 
+			zt_clk: zt {
+				compatible = "fixed-factor-clock";
+				clocks = <&pll1_div2_clk>;
+				#clock-cells = <0>;
+				clock-div = <4>;
+				clock-mult = <1>;
+			};
+
+			ztr_clk: ztr {
+				compatible = "fixed-factor-clock";
+				clocks = <&pll1_div2_clk>;
+				#clock-cells = <0>;
+				clock-div = <6>;
+				clock-mult = <1>;
+			};
+
+			ztrd2_clk: ztrd2 {
+				compatible = "fixed-factor-clock";
+				clocks = <&pll1_div2_clk>;
+				#clock-cells = <0>;
+				clock-div = <12>;
+				clock-mult = <1>;
+			};
+
+			zx_clk: zx {
+				compatible = "fixed-factor-clock";
+				clocks = <&pll1_div2_clk>;
+				#clock-cells = <0>;
+				clock-div = <2>;
+				clock-mult = <1>;
+			};
+
 			s0_clk: s0 {
 				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
+				clocks = <&pll1_div2_clk>;
 				#clock-cells = <0>;
 				clock-div = <2>;
 				clock-mult = <1>;
@@ -128,7 +137,7 @@
 
 			s1_clk: s1 {
 				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
+				clocks = <&pll1_div2_clk>;
 				#clock-cells = <0>;
 				clock-div = <3>;
 				clock-mult = <1>;
@@ -160,7 +169,7 @@
 
 			s2_clk: s2 {
 				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
+				clocks = <&pll1_div2_clk>;
 				#clock-cells = <0>;
 				clock-div = <4>;
 				clock-mult = <1>;
@@ -192,7 +201,7 @@
 
 			s3_clk: s3 {
 				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
+				clocks = <&pll1_div2_clk>;
 				#clock-cells = <0>;
 				clock-div = <6>;
 				clock-mult = <1>;
@@ -224,7 +233,7 @@
 
 			cl_clk: cl {
 				compatible = "fixed-factor-clock";
-				clocks = <&cpg_clocks R8A7795_CLK_PLL1>;
+				clocks = <&pll1_div2_clk>;
 				#clock-cells = <0>;
 				clock-div = <48>;
 				clock-mult = <1>;
