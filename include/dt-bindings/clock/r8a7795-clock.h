@@ -54,6 +54,7 @@
 #define R8A7795_CLK_HDMI0		29
 
 /* MSTP8 */
+#define R8A7795_CLK_ETHERAVB		12
 
 /* MSTP9 */
 #define R8A7795_CLK_GPIO0		12
