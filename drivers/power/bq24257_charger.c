@@ -36,7 +36,6 @@
 #define BQ24257_REG_7			0x06
 
 #define BQ24257_MANUFACTURER		"Texas Instruments"
-#define BQ24257_STAT_IRQ		"stat"
 #define BQ24257_PG_GPIO			"pg"
 
 #define BQ24257_ILIM_SET_DELAY		1000	/* msec */
@@ -449,14 +448,13 @@ static void bq24257_handle_state_change(struct bq24257_device *bq,
 {
 	int ret;
 	struct bq24257_state old_state;
-	bool reset_iilimit = false;
-	bool config_iilimit = false;
 
 	mutex_lock(&bq->lock);
 	old_state = bq->state;
 	mutex_unlock(&bq->lock);
 
-	if (!new_state->power_good) {			     /* power removed */
+	if (!new_state->power_good) {
+		dev_dbg(bq->dev, "Power removed\n");
 		cancel_delayed_work_sync(&bq->iilimit_setup_work);
 
 		/* activate D+/D- port detection algorithm */
@@ -464,26 +462,20 @@ static void bq24257_handle_state_change(struct bq24257_device *bq,
 		if (ret < 0)
 			goto error;
 
-		reset_iilimit = true;
-	} else if (!old_state.power_good) {		    /* power inserted */
-		config_iilimit = true;
-	} else if (new_state->fault == FAULT_NO_BAT) {	   /* battery removed */
-		cancel_delayed_work_sync(&bq->iilimit_setup_work);
-
-		reset_iilimit = true;
-	} else if (old_state.fault == FAULT_NO_BAT) {    /* battery connected */
-		config_iilimit = true;
-	} else if (new_state->fault == FAULT_TIMER) { /* safety timer expired */
-		dev_err(bq->dev, "Safety timer expired! Battery dead?\n");
-	}
-
-	if (reset_iilimit) {
+		/* reset input current limit */
 		ret = bq24257_field_write(bq, F_IILIMIT, IILIMIT_500);
 		if (ret < 0)
 			goto error;
-	} else if (config_iilimit) {
+	} else if (!old_state.power_good) {
+		dev_dbg(bq->dev, "Power inserted\n");
+
+		/* configure input current limit */
 		schedule_delayed_work(&bq->iilimit_setup_work,
 				      msecs_to_jiffies(BQ24257_ILIM_SET_DELAY));
+	} else if (new_state->fault == FAULT_NO_BAT) {
+		dev_warn(bq->dev, "Battery removed\n");
+	} else if (new_state->fault == FAULT_TIMER) {
+		dev_err(bq->dev, "Safety timer expired! Battery dead?\n");
 	}
 
 	return;
@@ -604,19 +596,6 @@ static int bq24257_power_supply_init(struct bq24257_device *bq)
 		return PTR_ERR(bq->charger);
 
 	return 0;
-}
-
-static int bq24257_irq_probe(struct bq24257_device *bq)
-{
-	struct gpio_desc *stat_irq;
-
-	stat_irq = devm_gpiod_get_index(bq->dev, BQ24257_STAT_IRQ, 0, GPIOD_IN);
-	if (IS_ERR(stat_irq)) {
-		dev_err(bq->dev, "could not probe stat_irq pin\n");
-		return PTR_ERR(stat_irq);
-	}
-
-	return gpiod_to_irq(stat_irq);
 }
 
 static int bq24257_pg_gpio_probe(struct bq24257_device *bq)
@@ -740,21 +719,15 @@ static int bq24257_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	if (client->irq <= 0)
-		client->irq = bq24257_irq_probe(bq);
-
-	if (client->irq < 0) {
-		dev_err(dev, "no irq resource found\n");
-		return client->irq;
-	}
-
 	ret = devm_request_threaded_irq(dev, client->irq, NULL,
 					bq24257_irq_handler_thread,
 					IRQF_TRIGGER_FALLING |
 					IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-					BQ24257_STAT_IRQ, bq);
-	if (ret)
+					"bq24257", bq);
+	if (ret) {
+		dev_err(dev, "Failed to request IRQ #%d\n", client->irq);
 		return ret;
+	}
 
 	ret = bq24257_power_supply_init(bq);
 	if (ret < 0)
