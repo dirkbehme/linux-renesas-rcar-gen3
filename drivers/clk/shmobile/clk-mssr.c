@@ -307,6 +307,7 @@ static void __init cpg_mssr_init(struct device_node *np)
 
 	// TODO Register reset controller
 }
+CLK_OF_DECLARE(cpg_mssr, "renesas,r8a7795-cpg-mssr", cpg_mssr_init);
 
 
 #ifdef CONFIG_PM_GENERIC_DOMAINS_OF

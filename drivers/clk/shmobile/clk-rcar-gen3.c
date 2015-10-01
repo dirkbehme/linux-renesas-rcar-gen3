@@ -237,6 +237,8 @@ static void __init rcar_gen3_cpg_clocks_init(struct device_node *np)
 	cpg->data.clk_num = i;
 
 	of_clk_add_provider(np, of_clk_src_onecell_get, &cpg->data);
+
+	cpg_mssr_add_clk_domain(np);
 }
 CLK_OF_DECLARE(rcar_gen3_cpg_clks, "renesas,rcar-gen3-cpg-clocks",
 	       rcar_gen3_cpg_clocks_init);
