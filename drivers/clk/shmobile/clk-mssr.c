@@ -323,7 +323,7 @@ static int cpg_mssr_attach_dev(struct generic_pm_domain *domain,
 	while (!of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
 					   &clkspec)) {
 		if (of_device_is_compatible(clkspec.np,
-					    "renesas,r8a7791-cpg-mssr"))
+					    "renesas,r8a7795-cpg-mssr"))
 			goto found;
 
 		of_node_put(clkspec.np);
