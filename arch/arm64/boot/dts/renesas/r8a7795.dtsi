@@ -397,6 +397,7 @@
 				clock-output-names = "main", "pll0", "pll1",
 						     "pll2", "pll3", "pll4";
 				#power-domain-cells = <0>;
+				renesas,modemr = <&rst 0x60>;
 
 				/* Module Standby and Software Reset */
 				mssr: mssr@e6150130 {
@@ -595,6 +596,11 @@
 		pfc: pfc@e6060000 {
 			compatible = "renesas,pfc-r8a7795";
 			reg = <0 0xe6060000 0 0x50c>;
+		};
+
+		rst: reset-controller@e6160000 {
+			compatible = "renesas,rst-r8a7795", "syscon";
+			reg = <0 0xe6160000 0 0x0200>;
 		};
 
 		dmac0: dma-controller@e6700000 {
