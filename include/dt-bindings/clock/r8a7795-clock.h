@@ -38,6 +38,7 @@
 /* MSTP7 */
 
 /* MSTP8 */
+#define R8A7795_CLK_ETHERAVB		12
 
 /* MSTP9 */
 #define R8A7795_CLK_GPIO7		5
@@ -83,5 +84,9 @@
 #define R8A7795_CLK_SCU_SRC2		29
 #define R8A7795_CLK_SCU_SRC1		30
 #define R8A7795_CLK_SCU_SRC0		31
+
+/* MSTP9 */
+
+/* MSTP10 */
 
 #endif /* __DT_BINDINGS_CLOCK_R8A7795_H__ */
