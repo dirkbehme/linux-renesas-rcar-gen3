@@ -567,7 +567,7 @@ void clk_unregister(struct clk *clk);
 void devm_clk_unregister(struct device *dev, struct clk *clk);
 
 /* helper functions */
-const char *__clk_get_name(struct clk *clk);
+const char *__clk_get_name(const struct clk *clk);
 struct clk_hw *__clk_get_hw(struct clk *clk);
 u8 __clk_get_num_parents(struct clk *clk);
 struct clk *__clk_get_parent(struct clk *clk);
