@@ -76,6 +76,15 @@
 		clock-frequency = <24576000>;
 	};
 
+	fixedregulator1v8: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	audio_clkout: audio_clkout {
 		/*
 		 * This is same as <&rcar_sound 0>
@@ -176,6 +185,11 @@
 	avb_pins: avb {
 		renesas,groups = "avb_mdc";
 		renesas,function = "avb";
+	};
+
+	mmc0_pins: mmc0 {
+		renesas,groups = "sdhi2_data8", "sdhi2_ctrl";
+		renesas,function = "sdhi2";
 	};
 
 	sound_pins: sound {
@@ -319,6 +333,16 @@
 		interrupt-parent = <&gpio2>;
 		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
 	};
+};
+
+&mmc0 {
+	pinctrl-0 = <&mmc0_pins>;
+	pinctrl-names = "default";
+
+	vmmc-supply = <&fixedregulator1v8>;
+	vqmmc-supply = <&fixedregulator1v8>;
+	non-removable;
+	status = "okay";
 };
 
 &pcie_bus_clk {
