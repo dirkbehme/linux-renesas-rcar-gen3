@@ -726,7 +726,7 @@
 			compatible = "renesas,vsp2";
 			reg = <0 0xfe920000 0 0x8000>;
 			interrupts = <GIC_SPI 266 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 624>;
+			clocks = <&cpg CPG_MOD 624>;
 
 			renesas,has-lut;
 			renesas,has-sru;
@@ -738,8 +738,7 @@
 			compatible = "renesas,vsp2";
 			reg = <0 0xfe960000 0 0x8000>;
 			interrupts = <GIC_SPI 465 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr R8A7795_CLK_VSPBD>;
-			clocks = <&mssr CPG_MOD 626>;
+			clocks = <&cpg CPG_MOD 626>;
 
 			renesas,#rpf = <5>;
 			renesas,#wpf = <1>;
@@ -749,8 +748,7 @@
 			compatible = "renesas,vsp2";
 			reg = <0 0xfe9a0000 0 0x8000>;
 			interrupts = <GIC_SPI 444 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr R8A7795_CLK_VSPI0>;
-			clocks = <&mssr CPG_MOD 631>;
+			clocks = <&cpg CPG_MOD 631>;
 
 			renesas,has-lut;
 			renesas,has-sru;
@@ -763,8 +761,7 @@
 			compatible = "renesas,vsp2";
 			reg = <0 0xfe9b0000 0 0x8000>;
 			interrupts = <GIC_SPI 445 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr R8A7795_CLK_VSPI1>;
-			clocks = <&mssr CPG_MOD 630>;
+			clocks = <&cpg CPG_MOD 630>;
 
 			renesas,has-lut;
 			renesas,has-sru;
@@ -777,8 +774,7 @@
 			compatible = "renesas,vsp2";
 			reg = <0 0xfe9c0000 0 0x8000>;
 			interrupts = <GIC_SPI 446 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr R8A7795_CLK_VSPI2>;
-			clocks = <&mssr CPG_MOD 629>;
+			clocks = <&cpg CPG_MOD 629>;
 
 			renesas,has-lut;
 			renesas,has-sru;
@@ -791,7 +787,7 @@
 			compatible = "renesas,vsp2d";
 			reg = <0 0xfea20000 0 0x8000>;
 			interrupts = <GIC_SPI 466 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 623>;
+			clocks = <&cpg CPG_MOD 623>;
 
 			renesas,has-bru;
 			renesas,has-lif;
@@ -804,7 +800,7 @@
 			compatible = "renesas,vsp2d";
 			reg = <0 0xfea28000 0 0x8000>;
 			interrupts = <GIC_SPI 467 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 622>;
+			clocks = <&cpg CPG_MOD 622>;
 
 			renesas,has-bru;
 			renesas,has-lif;
@@ -817,7 +813,7 @@
 			compatible = "renesas,vsp2d";
 			reg = <0 0xfea30000 0 0x8000>;
 			interrupts = <GIC_SPI 468 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 621>;
+			clocks = <&cpg CPG_MOD 621>;
 
 			renesas,has-bru;
 			renesas,has-lif;
@@ -830,7 +826,7 @@
 			compatible = "renesas,vsp2d";
 			reg = <0 0xfea38000 0 0x8000>;
 			interrupts = <GIC_SPI 469 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 620>;
+			clocks = <&cpg CPG_MOD 620>;
 
 			renesas,has-bru;
 			renesas,has-lif;
@@ -848,11 +844,11 @@
 				     <0 268 IRQ_TYPE_LEVEL_HIGH>,
 				     <0 269 IRQ_TYPE_LEVEL_HIGH>,
 				     <0 270 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&mssr CPG_MOD 724>,
-				 <&mssr CPG_MOD 723>,
-				 <&mssr CPG_MOD 722>,
-				 <&mssr CPG_MOD 721>,
-				 <&mssr CPG_MOD 727>;
+			clocks = <&cpg CPG_MOD 724>,
+				 <&cpg CPG_MOD 723>,
+				 <&cpg CPG_MOD 722>,
+				 <&cpg CPG_MOD 721>,
+				 <&cpg CPG_MOD 727>;
 			clock-names = "du.0", "du.1", "du.2", "du.3", "lvds.0";
 			status = "disabled";
 
