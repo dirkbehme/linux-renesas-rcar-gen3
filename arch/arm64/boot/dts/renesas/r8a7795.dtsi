@@ -775,5 +775,39 @@
 			clocks = <&cpg CPG_MOD 815>;
 			status = "disabled";
 		};
+
+		usb2_phy0: usb-phy@ee080200 {
+			compatible = "renesas,usb2-phy-r8a7795";
+			reg = <0 0xee080200 0 0x700>, <0 0xe6590100 0 0x100>;
+			reg-names = "usb2_host", "hsusb";
+			interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&cpg CPG_MOD 703>, <&cpg CPG_MOD 704>;
+			clock-names = "usb2", "hsusb";
+			power-domains = <&cpg>;
+			#phy-cells = <0>;
+			status = "disabled";
+		};
+
+		usb2_phy1: usb-phy@ee0a0200 {
+			compatible = "renesas,usb2-phy-r8a7795";
+			reg = <0 0xee0a0200 0 0x700>;
+			reg-names = "usb2_host";
+			clocks = <&cpg CPG_MOD 702>;
+			clock-names = "usb2";
+			power-domains = <&cpg>;
+			#phy-cells = <0>;
+			status = "disabled";
+		};
+
+		usb2_phy2: usb-phy@ee0c0200 {
+			compatible = "renesas,usb2-phy-r8a7795";
+			reg = <0 0xee0c0200 0 0x700>;
+			reg-names = "usb2_host";
+			clocks = <&cpg CPG_MOD 701>;
+			clock-names = "usb2";
+			power-domains = <&cpg>;
+			#phy-cells = <0>;
+			status = "disabled";
+		};
 	};
 };
