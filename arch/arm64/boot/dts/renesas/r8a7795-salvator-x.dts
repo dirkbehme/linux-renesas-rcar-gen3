@@ -297,3 +297,7 @@
 &ohci2 {
 	status = "okay";
 };
+
+&hsusb {
+	status = "okay";
+};
