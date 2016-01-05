@@ -145,6 +145,7 @@
 		renesas,function = "usb";
 	};
 };
+
 &scif1 {
 	pinctrl-0 = <&scif1_pins>;
 	pinctrl-names = "default";
@@ -311,5 +312,17 @@
 };
 
 &hsusb {
+	status = "okay";
+};
+
+&pcie_bus_clk {
+	status = "okay";
+};
+
+&pciec0 {
+	status = "okay";
+};
+
+&pciec1 {
 	status = "okay";
 };
