@@ -214,6 +214,10 @@ static const unsigned int r8a7795_crit_mod_clks[] __initconst = {
 #define CPG_PLL0CR	0x00d8
 #define CPG_PLL2CR	0x002c
 #define CPG_PLL4CR	0x01f4
+#define SD0CKCR		0x0074
+#define SD1CKCR		0x0078
+#define SD2CKCR		0x0268
+#define SD3CKCR		0x026C
 
 /*
  * CPG Clock Data
@@ -338,6 +342,12 @@ struct clk * __init r8a7795_cpg_clk_register(struct device *dev,
 	default:
 		return ERR_PTR(-EINVAL);
 	}
+
+	/* FIXME: Hard code SD clock dividers until we have a driver */
+	writel(0, base + SD0CKCR);
+	writel(0, base + SD1CKCR);
+	writel(0, base + SD2CKCR);
+	writel(0, base + SD3CKCR);
 
 	return clk_register_fixed_factor(NULL, core->name,
 					 __clk_get_name(parent), 0, mult, div);
