@@ -157,17 +157,21 @@ static void tmio_mmc_complete_tasklet_fn(unsigned long arg)
 
 	dev_dbg(&host->pdev->dev, "%s: %p\n", __func__, host->data);
 
+	spin_lock_irq(&host->lock);
+
 	if (!host->data)
-		return;
+		goto out;
 
 	if (host->data->flags & MMC_DATA_READ)
 		dir = DMA_FROM_DEVICE;
 	else
 		dir = DMA_TO_DEVICE;
 
-	dma_unmap_sg(&host->pdev->dev, host->sg_ptr, host->sg_len, dir);
 	tmio_mmc_enable_dma(host, false);
+	dma_unmap_sg(&host->pdev->dev, host->sg_ptr, host->sg_len, dir);
 	tmio_mmc_do_data_irq(host);
+out:
+	spin_unlock_irq(&host->lock);
 }
 
 void tmio_mmc_request_dma(struct tmio_mmc_host *host,
