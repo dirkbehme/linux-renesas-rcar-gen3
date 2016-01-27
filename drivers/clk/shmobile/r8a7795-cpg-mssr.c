@@ -215,24 +215,19 @@ static const unsigned int r8a7795_crit_mod_clks[] __initconst = {
  * SDn Clock
  *
  */
-#define CPG_SD_STP_N_HCK	BIT(9)
-#define CPG_SD_STP_N_CK		BIT(8)
-#define CPG_SD_SD_N_SRCFC_MASK	(0x7 << CPG_SD_SD_N_SRCFC_SHIFT)
-#define CPG_SD_SD_N_SRCFC_SHIFT	2
-#define CPG_SD_SD_N_FC_MASK	(0x3 << CPG_SD_SD_N_FC_SHIFT)
-#define CPG_SD_SD_N_FC_SHIFT	0
+#define CPG_SD_STP_HCK		BIT(9)
+#define CPG_SD_STP_CK		BIT(8)
 
-#define CPG_SD_STP_MASK		(CPG_SD_STP_N_HCK | CPG_SD_STP_N_CK)
-#define CPG_SD_FC_MASK		(CPG_SD_SD_N_SRCFC_MASK | CPG_SD_SD_N_FC_MASK)
+#define CPG_SD_STP_MASK		(CPG_SD_STP_HCK | CPG_SD_STP_CK)
+#define CPG_SD_FC_MASK		(0x7 << 2 | 0x3 << 0)
 
-/* CPG_SD_DIV_TABLE_DATA(stp_n_hck, stp_n_ck, sd_n_srcfc, sd_n_fc, div) */
-#define CPG_SD_DIV_TABLE_DATA(_a, _b, _c, _d, _e) \
+#define CPG_SD_DIV_TABLE_DATA(stp_hck, stp_ck, sd_srcfc, sd_fc, sd_div) \
 { \
-	.val = ((_a) ? CPG_SD_STP_N_HCK : 0) | \
-	       ((_b) ? CPG_SD_STP_N_CK : 0) | \
-	       (((_c) << CPG_SD_SD_N_SRCFC_SHIFT) & CPG_SD_SD_N_SRCFC_MASK) | \
-	       (((_d) << CPG_SD_SD_N_FC_SHIFT) & CPG_SD_SD_N_FC_MASK), \
-	.div = (_e), \
+	.val = ((stp_hck) ? CPG_SD_STP_HCK : 0) | \
+	       ((stp_ck) ? CPG_SD_STP_CK : 0) | \
+	       ((sd_srcfc) << 2) | \
+	       ((sd_fc) << 0), \
+	.div = (sd_div), \
 }
 
 struct sd_div_table {
@@ -244,14 +239,14 @@ struct sd_clock {
 	struct clk_hw hw;
 	void __iomem *reg;
 	const struct sd_div_table *div_table;
-	int div_num;
+	unsigned int div_num;
 	unsigned int div_min;
 	unsigned int div_max;
 };
 
 /* SDn divider
- *                     sd_n_srcfc sd_n_fc   div
- * stp_n_hck stp_n_ck  (div)      (div)     = sd_n_srcfc x sd_n_fc
+ *                     sd_srcfc   sd_fc   div
+ * stp_hck   stp_ck    (div)      (div)     = sd_srcfc x sd_fc
  *-------------------------------------------------------------------
  *  0         0         0 (1)      1 (4)      4
  *  0         0         1 (2)      1 (4)      8
@@ -265,7 +260,7 @@ struct sd_clock {
  *  1         0         4 (16)     0 (2)     32
  */
 static const struct sd_div_table cpg_sd_div_table[] = {
-/*	CPG_SD_DIV_TABLE_DATA(stp_n_hck, stp_n_ck, sd_n_srcfc, sd_n_fc, div) */
+/*	CPG_SD_DIV_TABLE_DATA(stp_hck,  stp_ck,   sd_srcfc,   sd_fc,  sd_div) */
 	CPG_SD_DIV_TABLE_DATA(0,        0,        0,          1,        4),
 	CPG_SD_DIV_TABLE_DATA(0,        0,        1,          1,        8),
 	CPG_SD_DIV_TABLE_DATA(1,        0,        2,          1,       16),
@@ -280,44 +275,35 @@ static const struct sd_div_table cpg_sd_div_table[] = {
 
 #define to_sd_clock(_hw) container_of(_hw, struct sd_clock, hw)
 
-static int cpg_sd_clock_endisable(struct clk_hw *hw, bool enable)
+static int cpg_sd_clock_enable(struct clk_hw *hw)
 {
 	struct sd_clock *clock = to_sd_clock(hw);
 	u32 val, sd_fc;
-	int i;
+	unsigned int i;
 
 	val = clk_readl(clock->reg);
 
-	if (enable) {
-		sd_fc = val & CPG_SD_FC_MASK;
-		for (i = 0; i < clock->div_num; i++)
-			if (sd_fc == (clock->div_table[i].val & CPG_SD_FC_MASK))
-				break;
+	sd_fc = val & CPG_SD_FC_MASK;
+	for (i = 0; i < clock->div_num; i++)
+		if (sd_fc == (clock->div_table[i].val & CPG_SD_FC_MASK))
+			break;
 
-		if (i >= clock->div_num) {
-			pr_err("%s: 0x%4x is not support of division ratio.\n",
-				__func__, sd_fc);
-			return -ENODATA;
-		}
+	if (i >= clock->div_num)
+		return -EINVAL;
 
-		val &= ~(CPG_SD_STP_MASK);
-		val |= clock->div_table[i].val & CPG_SD_STP_MASK;
-	} else
-		val |= CPG_SD_STP_MASK;
+	val &= ~(CPG_SD_STP_MASK);
+	val |= clock->div_table[i].val & CPG_SD_STP_MASK;
 
 	clk_writel(val, clock->reg);
 
 	return 0;
 }
 
-static int cpg_sd_clock_enable(struct clk_hw *hw)
-{
-	return cpg_sd_clock_endisable(hw, true);
-}
-
 static void cpg_sd_clock_disable(struct clk_hw *hw)
 {
-	cpg_sd_clock_endisable(hw, false);
+	struct sd_clock *clock = to_sd_clock(hw);
+
+	clk_writel(clk_readl(clock->reg) | CPG_SD_STP_MASK, clock->reg);
 }
 
 static int cpg_sd_clock_is_enabled(struct clk_hw *hw)
@@ -331,9 +317,9 @@ static unsigned long cpg_sd_clock_recalc_rate(struct clk_hw *hw,
 						unsigned long parent_rate)
 {
 	struct sd_clock *clock = to_sd_clock(hw);
-	u32 rate = parent_rate;
+	unsigned long rate = parent_rate;
 	u32 val, sd_fc;
-	int i;
+	unsigned int i;
 
 	val = clk_readl(clock->reg);
 
@@ -342,15 +328,10 @@ static unsigned long cpg_sd_clock_recalc_rate(struct clk_hw *hw,
 		if (sd_fc == (clock->div_table[i].val & CPG_SD_FC_MASK))
 			break;
 
-	if (i >= clock->div_num) {
-		pr_err("%s: 0x%4x is not support of division ratio.\n",
-			__func__, sd_fc);
-		return 0;
-	}
+	if (i >= clock->div_num)
+		return -EINVAL;
 
-	do_div(rate, clock->div_table[i].div);
-
-	return rate;
+	return DIV_ROUND_CLOSEST(rate, clock->div_table[i].div);
 }
 
 static unsigned int cpg_sd_clock_calc_div(struct sd_clock *clock,
@@ -373,7 +354,7 @@ static long cpg_sd_clock_round_rate(struct clk_hw *hw, unsigned long rate,
 	struct sd_clock *clock = to_sd_clock(hw);
 	unsigned int div = cpg_sd_clock_calc_div(clock, rate, *parent_rate);
 
-	return *parent_rate / div;
+	return DIV_ROUND_CLOSEST(*parent_rate, div);
 }
 
 static int cpg_sd_clock_set_rate(struct clk_hw *hw, unsigned long rate,
@@ -382,17 +363,14 @@ static int cpg_sd_clock_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct sd_clock *clock = to_sd_clock(hw);
 	unsigned int div = cpg_sd_clock_calc_div(clock, rate, parent_rate);
 	u32 val;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < clock->div_num; i++)
 		if (div == clock->div_table[i].div)
 			break;
 
-	if (i >= clock->div_num) {
-		pr_err("%s: Not support divider range : div=%d (%lu/%lu).\n",
-			__func__, div, parent_rate, rate);
+	if (i >= clock->div_num)
 		return -EINVAL;
-	}
 
 	val = clk_readl(clock->reg);
 	val &= ~(CPG_SD_STP_MASK | CPG_SD_FC_MASK);
@@ -418,7 +396,7 @@ static struct clk * __init cpg_sd_clk_register(const struct cpg_core_clk *core,
 	struct clk_init_data init;
 	struct sd_clock *clock;
 	struct clk *clk;
-	int i;
+	unsigned int i;
 
 	clock = kzalloc(sizeof(*clock), GFP_KERNEL);
 	if (!clock)
