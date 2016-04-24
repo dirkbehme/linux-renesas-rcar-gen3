@@ -7053,6 +7053,16 @@ L:	linux-iio@vger.kernel.org
 S:	Maintained
 F:	drivers/iio/potentiometer/mcp4531.c
 
+MEDIA DRIVERS FOR RENESAS - FCP
+M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+L:	linux-media@vger.kernel.org
+L:	linux-renesas-soc@vger.kernel.org
+T:	git git://linuxtv.org/media_tree.git
+S:	Supported
+F:	Documentation/devicetree/bindings/media/renesas,fcp.txt
+F:	drivers/media/platform/rcar-fcp.c
+F:	include/media/rcar-fcp.h
+
 MEDIA DRIVERS FOR RENESAS - VSP1
 M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 L:	linux-media@vger.kernel.org
@@ -11278,6 +11288,14 @@ T:	git git://linuxtv.org/media_tree.git
 W:	https://linuxtv.org
 S:	Odd Fixes
 F:	drivers/media/pci/tw68/
+
+TW686X VIDEO4LINUX DRIVER
+M:	Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+L:	linux-media@vger.kernel.org
+T:	git git://linuxtv.org/media_tree.git
+W:	http://linuxtv.org
+S:	Maintained
+F:	drivers/media/pci/tw686x/
 
 TPM DEVICE DRIVER
 M:	Peter Huewe <peterhuewe@gmx.de>
