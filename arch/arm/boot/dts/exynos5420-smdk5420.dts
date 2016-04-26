@@ -109,7 +109,7 @@
 
 	display-timings {
 		native-mode = <&timing0>;
-		timing0: timing@0 {
+		timing0: timing {
 			clock-frequency = <50000>;
 			hactive = <2560>;
 			vactive = <1600>;
