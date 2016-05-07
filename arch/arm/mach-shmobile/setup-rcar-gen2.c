@@ -138,14 +138,13 @@ void __init rcar_gen2_timer_init_for_arch_timer(void)
 void __init rcar_gen2_timer_init(void)
 {
 	int err;
-	u32 mode = rcar_gen2_read_mode_pins();
 
 	err = rcar_init_boot_mode();
 	if (err)
 		pr_err("Could not initialise boot mode register driver\n");
 
 	rcar_gen2_timer_init_for_arch_timer();
-	rcar_gen2_clocks_init(mode);
+	rcar_gen2_clocks_init();
 	clocksource_probe();
 }
 

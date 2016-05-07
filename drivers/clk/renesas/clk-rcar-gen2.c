@@ -20,6 +20,8 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 
+#include <misc/boot-mode-reg.h>
+
 struct rcar_gen2_cpg {
 	struct clk_onecell_data data;
 	spinlock_t lock;
@@ -421,9 +423,15 @@ static void __init rcar_gen2_cpg_clocks_init(struct device_node *np)
 CLK_OF_DECLARE(rcar_gen2_cpg_clks, "renesas,rcar-gen2-cpg-clocks",
 	       rcar_gen2_cpg_clocks_init);
 
-void __init rcar_gen2_clocks_init(u32 mode)
+void __init rcar_gen2_clocks_init(void)
 {
-	cpg_mode = mode;
+	int err;
+
+	err = boot_mode_reg_get(&cpg_mode);
+	if (err) {
+		pr_err("%s: failed to obtain boot mode\n", __func__);
+		return;
+	}
 
 	of_clk_init(NULL);
 }
