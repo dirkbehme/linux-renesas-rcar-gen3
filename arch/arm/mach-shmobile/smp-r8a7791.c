@@ -20,6 +20,8 @@
 
 #include <asm/smp_plat.h>
 
+#include <misc/boot-mode-reg.h>
+
 #include "common.h"
 #include "platsmp-apmu.h"
 #include "r8a7791.h"
@@ -45,8 +47,17 @@ static void __init r8a7791_smp_prepare_cpus(unsigned int max_cpus)
 static int r8a7791_smp_boot_secondary(unsigned int cpu,
 				      struct task_struct *idle)
 {
+	int err;
+	u32 mode;
+
+	err = boot_mode_reg_get(&mode);
+	if (err) {
+		pr_warn("Unable to retrieve boot mode register\n");
+		return err;
+	}
+
 	/* Error out when hardware debug mode is enabled */
-	if (rcar_gen2_read_mode_pins() & BIT(21)) {
+	if (mode & BIT(21)) {
 		pr_warn("Unable to boot CPU%u when MD21 is set\n", cpu);
 		return -ENOTSUPP;
 	}
