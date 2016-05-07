@@ -21,4 +21,7 @@
 int boot_mode_reg_get(u32 *mode);
 int boot_mode_reg_set(u32 mode);
 
+/* Allow explicit initialisation before initcalls */
+int rcar_init_boot_mode(void);
+
 #endif

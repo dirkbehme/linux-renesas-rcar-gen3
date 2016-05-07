@@ -9,3 +9,11 @@ config BOOT_MODE_REG_CORE
 	help
 	  Say Y here to allow support for drivers to read boot mode
 	  registers and make the value available to other subsystems.
+
+config BOOT_MODE_REG_RCAR
+	tristate "Boot Mode Register Driver for Renesas R-Car SoCs"
+	default n
+	select BOOT_MODE_REG_CORE
+	help
+	  Say Y here to allow support for reading the boot mode register
+	  on Renesas R-Car SoCs.

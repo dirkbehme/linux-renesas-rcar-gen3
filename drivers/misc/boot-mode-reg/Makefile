@@ -4,3 +4,4 @@
 #
 
 obj-$(CONFIG_BOOT_MODE_REG_CORE)	+= core.o
+obj-$(CONFIG_BOOT_MODE_REG_RCAR)	+= rcar.o
