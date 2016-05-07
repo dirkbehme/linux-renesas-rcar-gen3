@@ -1,0 +1,11 @@
+#
+# Boot Mode Register Drivers
+#
+
+config BOOT_MODE_REG_CORE
+	tristate "Boot Mode Register Core Driver"
+	default n
+	depends on ARCH_SHMOBILE || ARCH_RENESAS || COMPILE_TEST
+	help
+	  Say Y here to allow support for drivers to read boot mode
+	  registers and make the value available to other subsystems.

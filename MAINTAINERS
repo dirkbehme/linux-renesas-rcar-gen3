@@ -10734,6 +10734,7 @@ S:	Maintained
 F:	Documentation/sh/
 F:	arch/sh/
 F:	drivers/sh/
+F:	drivers/misc/boot-mode-reg/
 
 SUSPEND TO RAM
 M:	"Rafael J. Wysocki" <rjw@rjwysocki.net>
