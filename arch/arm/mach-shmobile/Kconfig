@@ -23,6 +23,7 @@ config ARCH_RCAR_GEN2
 	select RENESAS_IRQC
 	select SYS_SUPPORTS_SH_CMT
 	select PCI_DOMAINS if PCI
+	select BOOT_MODE_REG_RCAR
 
 config ARCH_RMOBILE
 	bool

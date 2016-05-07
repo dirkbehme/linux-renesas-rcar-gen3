@@ -24,6 +24,7 @@
 #include <linux/memblock.h>
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <misc/boot-mode-reg.h>
 #include <asm/mach/arch.h>
 #include "common.h"
 #include "rcar-gen2.h"
@@ -49,13 +50,19 @@ u32 rcar_gen2_read_mode_pins(void)
 #define CNTCR 0
 #define CNTFID0 0x20
 
-void __init rcar_gen2_timer_init(void)
+void __init rcar_gen2_timer_init_for_arch_timer(void)
 {
-	u32 mode = rcar_gen2_read_mode_pins();
 #ifdef CONFIG_ARM_ARCH_TIMER
 	void __iomem *base;
 	int extal_mhz = 0;
-	u32 freq;
+	u32 freq, mode;
+	int err;
+
+	err = boot_mode_reg_get(&mode);
+	if (err) {
+		pr_err("%s: failed obtain boot mode\n", __func__);
+		return;
+	}
 
 	if (of_machine_is_compatible("renesas,r8a7794")) {
 		freq = 260000000 / 8;	/* ZS / 8 */
@@ -126,7 +133,18 @@ void __init rcar_gen2_timer_init(void)
 
 	iounmap(base);
 #endif /* CONFIG_ARM_ARCH_TIMER */
+}
 
+void __init rcar_gen2_timer_init(void)
+{
+	int err;
+	u32 mode = rcar_gen2_read_mode_pins();
+
+	err = rcar_init_boot_mode();
+	if (err)
+		pr_err("Could not initialise boot mode register driver\n");
+
+	rcar_gen2_timer_init_for_arch_timer();
 	rcar_gen2_clocks_init(mode);
 	clocksource_probe();
 }
