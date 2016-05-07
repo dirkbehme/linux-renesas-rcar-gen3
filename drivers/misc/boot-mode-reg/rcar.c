@@ -48,7 +48,9 @@ int __init rcar_init_boot_mode(void)
 	    of_machine_is_compatible("renesas,r8a7791") ||
 	    of_machine_is_compatible("renesas,r8a7792") ||
 	    of_machine_is_compatible("renesas,r8a7793") ||
-	    of_machine_is_compatible("renesas,r8a7794"))
+	    of_machine_is_compatible("renesas,r8a7794") ||
+	    of_machine_is_compatible("renesas,r8a7795") ||
+	    of_machine_is_compatible("renesas,r8a7796"))
 		return rcar_read_mode_pins();
 
 	return 0;
