@@ -19,6 +19,8 @@
 
 #include <dt-bindings/clock/r8a7796-cpg-mssr.h>
 
+#include <misc/boot-mode-reg.h>
+
 #include "renesas-cpg-mssr.h"
 #include "rcar-gen3-cpg.h"
 
@@ -159,7 +161,14 @@ static const struct rcar_gen3_cpg_pll_config cpg_pll_configs[16] __initconst = {
 static int __init r8a7796_cpg_mssr_init(struct device *dev)
 {
 	const struct rcar_gen3_cpg_pll_config *cpg_pll_config;
-	u32 cpg_mode = rcar_gen3_read_mode_pins();
+	u32 cpg_mode;
+	int err;
+
+	err = boot_mode_reg_get(&cpg_mode);
+	if (err) {
+		dev_err(dev, "Failed obtain boot mode: %i\n", err);
+		return err;
+	}
 
 	cpg_pll_config = &cpg_pll_configs[CPG_PLL_CONFIG_INDEX(cpg_mode)];
 	if (!cpg_pll_config->extal_div) {
