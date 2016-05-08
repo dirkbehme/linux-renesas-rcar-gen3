@@ -1122,6 +1122,11 @@
 			#power-domain-cells = <0>;
 		};
 
+		reset-controller@e6160000 {
+			compatible = "renesas,rcar-rst";
+			reg = <0 0xe6160000 0 0x200>;
+		};
+
 		/* Variable factor clocks */
 		sd2_clk: sd2@e6150078 {
 			compatible = "renesas,r8a7791-div6-clock", "renesas,cpg-div6-clock";

@@ -1,0 +1,15 @@
+Renesas RCar r8a779x reset module
+-----------------------------------------------------
+This binding defines the reset module found on Renesas RCar r8a779x
+SoCs. The reset module contains several reset related registers,
+the meaning of them is implementation dependent.
+
+Required properties:
+- compatible : "renesas,rcar-rst"
+- reg : Location and size of the reset module
+
+Example:
+	reset-controller@e6160000 {
+		compatible = "renesas,rcar-rst";
+		reg = <0 0xe6160000 0 0x200>;
+	};
