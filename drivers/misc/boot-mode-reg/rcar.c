@@ -16,24 +16,37 @@
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
 
 #include <misc/boot-mode-reg.h>
 
-#define MODEMR 0xe6160060
+#define RCAR_RST_BASE 0xe6160000
+#define RCAR_RST_SIZE 0x200
+#define MODEMR 0x60
 
 static int __init rcar_read_mode_pins(void)
 {
-	void __iomem *modemr;
+	void __iomem *reset;
+	struct device_node *np;
 	int err = -ENOMEM;
 	static u32 mode;
 
-	modemr = ioremap_nocache(MODEMR, 4);
-	if (!modemr) {
-		pr_err("failed to map boot mode register");
+	np = of_find_compatible_node(NULL, NULL, "renesas,rcar-rst");
+	if (np)
+		reset = of_iomap(np, 0);
+	else {
+		pr_warn("can't find renesas rcar-rst device node");
+		reset = ioremap_nocache(RCAR_RST_BASE, RCAR_RST_SIZE);
+	}
+
+	if (!reset) {
+		pr_err("failed to map reset registers");
+		of_node_put(np);
 		goto err;
 	}
-	mode = ioread32(modemr);
-	iounmap(modemr);
+	mode = ioread32(reset + MODEMR);
+	iounmap(reset);
+	of_node_put(np);
 
 	err = boot_mode_reg_set(mode);
 err:
